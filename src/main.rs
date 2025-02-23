@@ -21,8 +21,11 @@
 //    - pakai informasi KTP (NIK) dan Nomor Telp
 //    - bisa tambah informasi kesehatan lain (berat badan, tinggi, alergi, dll)
 
+mod protocol;
+
 use axum::{Router, response::Html, routing::get};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
 
 #[tokio::main]
 async fn main() {
