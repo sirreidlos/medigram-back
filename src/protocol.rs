@@ -99,3 +99,82 @@ where
 
     ed25519_compact::Signature::from_slice(&decoded).map_err(D::Error::custom)
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ConsultationData {
+    diagnoses: String,
+    symptoms: String,
+    prescription: String,
+    regimen: u8,
+    additional_description: String,
+    patient_consent: Consent,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct PrescriptionData {
+    doctor_consent: Consent,
+}
+
+mod test {
+    use super::*;
+    use base64;
+    use ed25519_compact::{KeyPair, Signature};
+    use serde_json_canonicalizer::to_string;
+    use uuid::Uuid;
+
+    #[test]
+    fn test_consent_serialization() {
+        let keypair = KeyPair::generate();
+        let nonce = [42u8; 16];
+        let message = to_string(&(Uuid::nil(), nonce)).unwrap();
+        let signature = keypair.sk.sign(message, None);
+
+        let consent = Consent {
+            signer_device_id: Uuid::nil(),
+            nonce,
+            signature,
+        };
+
+        let serialized =
+            serde_json::to_string(&consent).expect("Serialization failed");
+        let deserialized: Consent =
+            serde_json::from_str(&serialized).expect("Deserialization failed");
+
+        assert_eq!(consent.signer_device_id, deserialized.signer_device_id);
+        assert_eq!(consent.nonce, deserialized.nonce);
+        assert_eq!(consent.signature.as_ref(), deserialized.signature.as_ref());
+    }
+
+    #[test]
+    fn test_consent_verification() {
+        let keypair = KeyPair::generate();
+        let nonce = [99u8; 16];
+        let message = to_string(&(Uuid::nil(), nonce)).unwrap();
+        let signature = keypair.sk.sign(message, None);
+
+        let consent = Consent {
+            signer_device_id: Uuid::nil(),
+            nonce,
+            signature,
+        };
+
+        assert!(consent.verify(&keypair.pk));
+    }
+
+    #[test]
+    fn test_consent_verification_failure() {
+        let keypair = KeyPair::generate();
+        let another_keypair = KeyPair::generate();
+        let nonce = [1u8; 16];
+        let message = to_string(&(Uuid::nil(), nonce)).unwrap();
+        let signature = keypair.sk.sign(message, None);
+
+        let consent = Consent {
+            signer_device_id: Uuid::nil(),
+            nonce,
+            signature,
+        };
+
+        assert!(!consent.verify(&another_keypair.pk));
+    }
+}
