@@ -5,6 +5,7 @@ use ed25519_compact::{PublicKey, Signature};
 use serde::de::Error;
 use serde::{Deserialize, Serialize};
 use serde_json_canonicalizer::to_string;
+use uuid::Uuid;
 
 /// Since NIK only consists of 16 digits, should it be higher than this number
 /// (10^17-1), it means that it's an invalid NIK.
@@ -47,7 +48,7 @@ impl TryFrom<u64> for Nik {
 /// sent a message with a consent that uses the nonce.
 #[derive(Debug, Serialize, Deserialize)]
 struct Consent {
-    signer: Nik,
+    signer_device_id: Uuid,
     nonce: [u8; 16],
 
     #[serde(
@@ -63,7 +64,7 @@ impl Consent {
     /// Requires the other party's `PublicKey`.
     pub fn verify(&self, pk: &PublicKey) -> bool {
         // let msg = format!("{}{}", self.signer, self.nonce);
-        let message = to_string(&(self.signer, self.nonce));
+        let message = to_string(&(self.signer_device_id, self.nonce));
 
         match message {
             Ok(msg) => pk.verify(msg, &self.signature).is_ok(),
