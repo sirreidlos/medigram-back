@@ -5,12 +5,17 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE users (
     user_id DECIMAL(16) PRIMARY KEY NOT NULL,
     email TEXT NOT NULL,
+    password TEXT NOT NULL,
+);
+
+CREATE TABLE user_details {
+    user_id DECIMAL(16) PRIMARY KEY REFERENCES users(user_id),
     name TEXT NOT NULL,
     dob DATE NOT NULL,
     gender CHAR(1) NOT NULL,
     height INT NOT NULL,
     weight INT NOT NULL,
-);
+}
 
 CREATE TABLE doctor_profile (
     doctor_profile_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
