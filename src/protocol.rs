@@ -115,10 +115,10 @@ struct PrescriptionData {
     doctor_consent: Consent,
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
-    use base64;
-    use ed25519_compact::{KeyPair, Signature};
+    use ed25519_compact::KeyPair;
     use serde_json_canonicalizer::to_string;
     use uuid::Uuid;
 
