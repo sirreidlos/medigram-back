@@ -33,7 +33,7 @@ CREATE TABLE allergies (
 CREATE TABLE device_key (
     device_id UUID  PRIMARY KEY NOT NULL,
     user_id DECIMAL(16) REFERENCES users(user_id) NOT NULL,
-    public_key UUID NOT NULL,
+    public_key_pem TEXT NOT NULL,
     revoked BOOLEAN NOT NULL,
 );
 
