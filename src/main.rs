@@ -21,31 +21,38 @@
 //    - pakai informasi KTP (NIK) dan Nomor Telp
 //    - bisa tambah informasi kesehatan lain (berat badan, tinggi, alergi, dll)
 
+mod auth;
+pub mod canonical_json;
+mod jwt;
 mod protocol;
 mod route;
-pub mod canonical_json;
 mod schema;
 
+use crate::route::{handler, request_nonce};
 use axum::routing::get;
-use crate::route::{request_nonce, handler};
 use std::time::Duration;
 
 use axum::Router;
 use moka::sync::Cache;
+use sqlx::Pool;
+use sqlx::postgres::Postgres;
+use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Clone)]
 struct AppState {
     nonce_cache: Cache<[u8; 16], ()>,
+    db_pool: Pool<Postgres>,
+    blacklist: Cache<String, ()>,
 }
 
 impl AppState {
     fn add_nonce(&self, nonce: [u8; 16]) {
-    self.nonce_cache.insert(nonce, ());
+        self.nonce_cache.insert(nonce, ());
     }
 
     fn remove_nonce(&self, nonce: [u8; 16]) {
-       self.nonce_cache.invalidate(&nonce); 
+        self.nonce_cache.invalidate(&nonce);
     }
 }
 
@@ -61,15 +68,31 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    let db_pool = Pool::<Postgres>::connect(
+        "postgres://postgres@127.0.0.1:5432/medigram",
+    )
+    .await
+    .expect("failed to connect to db");
+
     let state = AppState {
         nonce_cache: Cache::builder()
             .time_to_live(Duration::from_secs(7 * 24 * 60 * 60))
             .build(),
+        db_pool,
+        blacklist: Cache::builder()
+            .time_to_live(Duration::from_secs(30 * 24 * 60 * 60))
+            .build(),
     };
+
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
 
     let app = Router::new()
         .route("/", get(handler))
         .route("/request-nonce", get(request_nonce))
+        .layer(cors)
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
