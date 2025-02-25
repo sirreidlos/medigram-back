@@ -22,6 +22,7 @@
 //    - bisa tambah informasi kesehatan lain (berat badan, tinggi, alergi, dll)
 
 mod protocol;
+mod schema;
 
 use axum::{Router, response::Html, routing::get};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};

@@ -17,7 +17,7 @@ const NIK_LOWERBOUND: u64 = 1_000_000_000_000_000;
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 /// Wrapper struct for `Nomor Induk Kependudukan` containing exactly 16
 /// digits.
-struct Nik(u64);
+pub struct Nik(u64);
 
 impl Display for Nik {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
