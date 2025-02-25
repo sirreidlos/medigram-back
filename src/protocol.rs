@@ -5,6 +5,7 @@ use ed25519_compact::{PublicKey, Signature};
 use serde::de::Error;
 use serde::{Deserialize, Serialize};
 use serde_json_canonicalizer::to_string;
+use uuid::Uuid;
 
 /// Since NIK only consists of 16 digits, should it be higher than this number
 /// (10^17-1), it means that it's an invalid NIK.
@@ -47,7 +48,7 @@ impl TryFrom<u64> for Nik {
 /// sent a message with a consent that uses the nonce.
 #[derive(Debug, Serialize, Deserialize)]
 struct Consent {
-    signer: Nik,
+    signer_device_id: Uuid,
     nonce: [u8; 16],
 
     #[serde(
@@ -63,7 +64,7 @@ impl Consent {
     /// Requires the other party's `PublicKey`.
     pub fn verify(&self, pk: &PublicKey) -> bool {
         // let msg = format!("{}{}", self.signer, self.nonce);
-        let message = to_string(&(self.signer, self.nonce));
+        let message = to_string(&(self.signer_device_id, self.nonce));
 
         match message {
             Ok(msg) => pk.verify(msg, &self.signature).is_ok(),
@@ -97,4 +98,83 @@ where
         .map_err(D::Error::custom)?;
 
     ed25519_compact::Signature::from_slice(&decoded).map_err(D::Error::custom)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ConsultationData {
+    diagnoses: String,
+    symptoms: String,
+    prescription: String,
+    regimen: u8,
+    additional_description: String,
+    patient_consent: Consent,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct PrescriptionData {
+    doctor_consent: Consent,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use ed25519_compact::KeyPair;
+    use serde_json_canonicalizer::to_string;
+    use uuid::Uuid;
+
+    #[test]
+    fn test_consent_serialization() {
+        let keypair = KeyPair::generate();
+        let nonce = [42u8; 16];
+        let message = to_string(&(Uuid::nil(), nonce)).unwrap();
+        let signature = keypair.sk.sign(message, None);
+
+        let consent = Consent {
+            signer_device_id: Uuid::nil(),
+            nonce,
+            signature,
+        };
+
+        let serialized =
+            serde_json::to_string(&consent).expect("Serialization failed");
+        let deserialized: Consent =
+            serde_json::from_str(&serialized).expect("Deserialization failed");
+
+        assert_eq!(consent.signer_device_id, deserialized.signer_device_id);
+        assert_eq!(consent.nonce, deserialized.nonce);
+        assert_eq!(consent.signature.as_ref(), deserialized.signature.as_ref());
+    }
+
+    #[test]
+    fn test_consent_verification() {
+        let keypair = KeyPair::generate();
+        let nonce = [99u8; 16];
+        let message = to_string(&(Uuid::nil(), nonce)).unwrap();
+        let signature = keypair.sk.sign(message, None);
+
+        let consent = Consent {
+            signer_device_id: Uuid::nil(),
+            nonce,
+            signature,
+        };
+
+        assert!(consent.verify(&keypair.pk));
+    }
+
+    #[test]
+    fn test_consent_verification_failure() {
+        let keypair = KeyPair::generate();
+        let another_keypair = KeyPair::generate();
+        let nonce = [1u8; 16];
+        let message = to_string(&(Uuid::nil(), nonce)).unwrap();
+        let signature = keypair.sk.sign(message, None);
+
+        let consent = Consent {
+            signer_device_id: Uuid::nil(),
+            nonce,
+            signature,
+        };
+
+        assert!(!consent.verify(&another_keypair.pk));
+    }
 }
