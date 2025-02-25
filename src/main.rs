@@ -24,6 +24,7 @@
 mod protocol;
 mod route;
 pub mod canonical_json;
+mod schema;
 
 use axum::routing::get;
 use crate::route::{request_nonce, handler};
