@@ -1,3 +1,5 @@
+use num_traits::ToPrimitive;
+use sqlx::types::BigDecimal;
 use std::fmt::Display;
 
 use base64::Engine;
@@ -18,6 +20,7 @@ const NIK_LOWERBOUND: u64 = 1_000_000_000_000_000;
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 /// Wrapper struct for `Nomor Induk Kependudukan` containing exactly 16
 /// digits.
+#[derive(Hash, Eq, PartialEq)]
 pub struct Nik(u64);
 
 impl Display for Nik {
@@ -37,6 +40,14 @@ impl TryFrom<u64> for Nik {
         }
 
         Ok(Self(value))
+    }
+}
+
+impl From<BigDecimal> for Nik {
+    fn from(value: BigDecimal) -> Self {
+        // TODO holy fix this please
+        // or atleast guarantee that it wont crash
+        Self(value.to_u64().unwrap())
     }
 }
 

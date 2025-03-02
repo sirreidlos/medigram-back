@@ -3,13 +3,14 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE users (
-    user_id DECIMAL(16) PRIMARY KEY NOT NULL,
+    user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL
 );
 
 CREATE TABLE user_details (
-    user_id DECIMAL(16) PRIMARY KEY REFERENCES users(user_id),
+    user_id UUID PRIMARY KEY REFERENCES users(user_id),
+    nik DECIMAL(16) NOT NULL,
     name TEXT NOT NULL,
     dob DATE NOT NULL,
     gender CHAR(1) NOT NULL,
@@ -19,27 +20,27 @@ CREATE TABLE user_details (
 
 CREATE TABLE doctor_profile (
     doctor_profile_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id DECIMAL(16) REFERENCES users(user_id) NOT NULL,
+    user_id UUID REFERENCES users(user_id) NOT NULL,
     practice_permit TEXT NOT NULL,
     practice_address TEXT NOT NULL -- Maybe separate the address into smaller units?
 );
 
 CREATE TABLE allergies (
     allergy_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id DECIMAL(16) REFERENCES users(user_id) NOT NULL,
+    user_id UUID REFERENCES users(user_id) NOT NULL,
     allergy TEXT NOT NULL
 );
 
 CREATE TABLE device_key (
     device_id UUID  PRIMARY KEY NOT NULL,
-    user_id DECIMAL(16) REFERENCES users(user_id) NOT NULL,
+    user_id UUID REFERENCES users(user_id) NOT NULL,
     public_key_pem TEXT NOT NULL,
     revoked BOOLEAN NOT NULL
 );
 
 CREATE TABLE record (
     record_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id DECIMAL(16) REFERENCES users(user_id) NOT NULL
+    user_id UUID REFERENCES users(user_id) NOT NULL
 );
 
 CREATE TABLE consultations (

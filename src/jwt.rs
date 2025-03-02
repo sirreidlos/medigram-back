@@ -19,19 +19,18 @@ use std::{
 // use tower_http::{cors::{Any, CorsLayer}, limit::RequestBodyLimitLayer};
 use uuid::Uuid;
 
-use crate::AppState;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct User {
-    id: String,
-    username: String,
-    password_hash: String,
-}
+use crate::{AppError, AppState};
 
 // Login request payload
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
-    pub username: String,
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RegisterRequest {
+    pub email: String,
     pub password: String,
 }
 
@@ -39,7 +38,7 @@ pub struct LoginRequest {
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
     pub access_token: String,
-    pub refresh_token: String,
+    pub session_id: String,
     pub token_type: String,
     pub expires_in: i64,
 }
@@ -62,7 +61,7 @@ pub struct Keys {
 
 // in seconds
 static ACCESS_TOKEN_TTL: Duration = Duration::minutes(15);
-pub static REFRESH_TOKEN_TTL: Duration = Duration::days(30);
+pub static SESSION_TTL: Duration = Duration::days(30);
 
 static KEYS: Lazy<Keys> = Lazy::new(|| {
     let secret = "your_jwt_secret_key_here_make_this_random_and_secure";
@@ -72,8 +71,8 @@ static KEYS: Lazy<Keys> = Lazy::new(|| {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     sub: String, // Subject (user ID)
-    exp: usize,  // Expiration time
-    iat: usize,  // Issued at
+    exp: i64,    // Expiration time
+    iat: i64,    // Issued at
     #[serde(skip_serializing_if = "Option::is_none")]
     refresh_token_id: Option<String>, // For refresh tokens, to allow revocation
 }
@@ -94,6 +93,7 @@ pub enum AuthError {
     WrongCredentials,
     TokenCreation,
     TokenBlacklisted,
+    UserNotFound,
 }
 
 impl IntoResponse for AuthError {
@@ -117,6 +117,9 @@ impl IntoResponse for AuthError {
             AuthError::TokenBlacklisted => {
                 (StatusCode::UNAUTHORIZED, "Token has been revoked")
             }
+            AuthError::UserNotFound => {
+                (StatusCode::NOT_FOUND, "User not found")
+            }
         };
 
         let body = Json(serde_json::json!({
@@ -127,6 +130,31 @@ impl IntoResponse for AuthError {
     }
 }
 
+pub fn get_token(headers: &axum::http::HeaderMap) -> Option<&str> {
+    headers
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.trim_start_matches("Bearer "))
+}
+
+pub fn get_session_id(headers: &axum::http::HeaderMap) -> Option<&str> {
+    headers
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.trim_start_matches("Bearer "))
+}
+
+pub fn verify_token(token: &str) -> Result<(), AuthError> {
+    decode::<Claims>(token, &KEYS.decoding, &Validation::default())
+        .map(|_| ())
+        .map_err(|e| match e.kind() {
+            jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
+                AuthError::ExpiredToken
+            }
+            _ => AuthError::InvalidToken,
+        })
+}
+
 pub fn create_access_token(user_id: &str) -> Result<(String, i64), AuthError> {
     let expiration = Utc::now()
         .checked_add_signed(ACCESS_TOKEN_TTL)
@@ -135,8 +163,8 @@ pub fn create_access_token(user_id: &str) -> Result<(String, i64), AuthError> {
 
     let claims = Claims {
         sub: user_id.to_owned(),
-        exp: expiration as usize,
-        iat: Utc::now().timestamp() as usize,
+        exp: expiration,
+        iat: Utc::now().timestamp(),
         refresh_token_id: None,
     };
 
@@ -146,32 +174,16 @@ pub fn create_access_token(user_id: &str) -> Result<(String, i64), AuthError> {
     Ok((token, 15 * 60)) // 15 minutes in seconds
 }
 
-pub fn create_refresh_token(user_id: &str) -> Result<String, AuthError> {
-    let expiration = Utc::now()
-        .checked_add_signed(REFRESH_TOKEN_TTL)
-        .expect("valid timestamp")
-        .timestamp();
-
-    let refresh_token_id = Uuid::new_v4().to_string();
-
-    let claims = Claims {
-        sub: user_id.to_owned(),
-        exp: expiration as usize,
-        iat: Utc::now().timestamp() as usize,
-        refresh_token_id: Some(refresh_token_id),
-    };
-
-    encode(&Header::default(), &claims, &KEYS.encoding)
-        .map_err(|_| AuthError::TokenCreation)
-}
-
-pub async fn refresh_token(
+pub async fn refresh_tokens(
     State(state): State<AppState>,
     Json(payload): Json<RefreshRequest>,
-) -> Result<Json<AuthResponse>, AuthError> {
+) -> Result<Json<AuthResponse>, AppError> {
     // Check if token is blacklisted
-    if state.blacklist.contains_key(&payload.refresh_token) {
-        return Err(AuthError::TokenBlacklisted);
+    if state
+        .recognized_session_id
+        .contains_key(&payload.refresh_token)
+    {
+        return Err(AuthError::TokenBlacklisted.into());
     }
 
     // Decode and validate the refresh token
@@ -189,19 +201,30 @@ pub async fn refresh_token(
 
     // Ensure it's a refresh token
     if token_data.claims.refresh_token_id.is_none() {
-        return Err(AuthError::InvalidToken);
+        return Err(AuthError::InvalidToken.into());
     }
 
     // Create new tokens
     let user_id = token_data.claims.sub;
     let (access_token, expires_in) = create_access_token(&user_id)?;
-    let refresh_token = create_refresh_token(&user_id)?;
+    // let refresh_token = create_refresh_token(&user_id)?;
 
+    todo!();
     // Return the new tokens
-    Ok(Json(AuthResponse {
-        access_token,
-        refresh_token,
-        token_type: "Bearer".to_string(),
-        expires_in,
-    }))
+    // Ok(Json(AuthResponse {
+    //     access_token,
+    //     session_id: refresh_token,
+    //     token_type: "Bearer".to_string(),
+    //     expires_in,
+    // }))
+}
+
+pub async fn revoke_user_access(
+    State(state): State<AppState>,
+) -> Result<(StatusCode, String), AppError> {
+    // TODO
+    // - add payload for the key and user_id to revoke
+    // - get all device id and remove from state cache
+    //
+    todo!()
 }

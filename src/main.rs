@@ -29,21 +29,62 @@ mod route;
 mod schema;
 
 use crate::route::{handler, request_nonce};
-use axum::routing::get;
-use std::time::Duration;
+use auth::auth_middleware;
+use axum::{
+    Json,
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
+};
+use jwt::AuthError;
+use protocol::Nik;
+use std::{collections::HashSet, time::Duration};
+use tracing::info;
+use uuid::Uuid;
 
 use axum::Router;
 use moka::sync::Cache;
 use sqlx::Pool;
 use sqlx::postgres::Postgres;
 use tower_http::cors::{Any, CorsLayer};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{
+    EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt,
+};
+
+enum AppError {
+    InternalError,
+    Auth(AuthError),
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> axum::response::Response {
+        let (status, error_message) = match self {
+            AppError::InternalError => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An internal error has occured",
+            ),
+            AppError::Auth(auth_error) => return auth_error.into_response(),
+        };
+
+        let body = Json(serde_json::json!({
+            "error": error_message,
+        }));
+
+        (status, body).into_response()
+    }
+}
+
+impl From<AuthError> for AppError {
+    fn from(value: AuthError) -> Self {
+        Self::Auth(value)
+    }
+}
 
 #[derive(Clone)]
 struct AppState {
     nonce_cache: Cache<[u8; 16], ()>,
     db_pool: Pool<Postgres>,
-    blacklist: Cache<String, ()>,
+    recognized_session_id: Cache<String, Uuid>,
 }
 
 impl AppState {
@@ -59,13 +100,14 @@ impl AppState {
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+            format!("{}=trace", env!("CARGO_CRATE_NAME")).into()
+        }))
         .with(
-            tracing_subscriber::filter::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| {
-                    format!("{}=trace", env!("CARGO_CRATE_NAME")).into()
-                }),
+            fmt::layer()
+                .event_format(fmt::format()) // Use the correct `Full` format
+                .with_thread_names(true), // Show thread names
         )
-        .with(tracing_subscriber::fmt::layer())
         .init();
 
     let db_pool = Pool::<Postgres>::connect(
@@ -79,7 +121,7 @@ async fn main() {
             .time_to_live(Duration::from_secs(7 * 24 * 60 * 60))
             .build(),
         db_pool,
-        blacklist: Cache::builder()
+        recognized_session_id: Cache::builder()
             .time_to_live(Duration::from_secs(30 * 24 * 60 * 60))
             .build(),
     };
@@ -91,13 +133,19 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(handler))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ))
         .route("/request-nonce", get(request_nonce))
+        .route("/login", post(auth::login))
+        .route("/register", post(auth::register))
         .layer(cors)
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
-    println!("listening on {}", listener.local_addr().unwrap());
+    info!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 }

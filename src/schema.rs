@@ -9,14 +9,15 @@ use chrono::{DateTime, NaiveDate, Utc};
 use ed25519_compact::PublicKey;
 use uuid::Uuid;
 
-struct User {
-    user_id: Nik,
-    email: String,
-    password_hash: String,
+pub struct User {
+    pub user_id: Uuid,
+    pub email: String,
+    pub password_hash: String,
 }
 
-struct UserDetail {
-    user_id: Nik,
+pub struct UserDetail {
+    user_id: Uuid,
+    nik: Nik,
     name: String,
     dob: NaiveDate,
     gender: char,
@@ -24,26 +25,26 @@ struct UserDetail {
     weight_in_kg: f64,
 }
 
-struct Allergy {
+pub struct Allergy {
     allergy_id: Uuid,
-    user_id: Nik,
+    user_id: Uuid,
     allergy: String,
 }
 
 // TODO map device_id to public_key in an lru cache
-struct DeviceKey {
+pub struct DeviceKey {
     device_id: Uuid,
-    user_id: Nik,
+    user_id: Uuid,
     public_key: PublicKey,
     revoked: bool,
 }
 
-struct Record {
+pub struct Record {
     record_id: Uuid,
     user_id: Uuid,
 }
 
-struct Consultation {
+pub struct Consultation {
     consultation_id: Uuid,
     doctor_id: Uuid,
     record_id: Uuid,
@@ -51,19 +52,19 @@ struct Consultation {
     symptoms: Vec<Symptom>,
 }
 
-struct Diagnosis {
+pub struct Diagnosis {
     diagnosis_id: Uuid,
     consultation_id: Uuid,
     diagnosis: String,
 }
 
-struct Symptom {
+pub struct Symptom {
     symptom_id: Uuid,
     consultation_id: Uuid,
     symptom: String,
 }
 
-struct Prescription {
+pub struct Prescription {
     prescription_id: Uuid,
     record_id: Uuid,
     drug_name: String,
