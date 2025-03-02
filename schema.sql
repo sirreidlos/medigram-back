@@ -18,7 +18,7 @@ CREATE TABLE user_details (
     weight_in_kg DOUBLE NOT NULL
 );
 
-CREATE TABLE doctor_profile (
+CREATE TABLE doctor_profiles (
     doctor_profile_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(user_id) NOT NULL,
     practice_permit TEXT NOT NULL,
@@ -31,22 +31,22 @@ CREATE TABLE allergies (
     allergy TEXT NOT NULL
 );
 
-CREATE TABLE device_key (
+CREATE TABLE device_keys (
     device_id UUID  PRIMARY KEY NOT NULL,
     user_id UUID REFERENCES users(user_id) NOT NULL,
     public_key_pem TEXT NOT NULL,
     revoked BOOLEAN NOT NULL
 );
 
-CREATE TABLE record (
+CREATE TABLE records (
     record_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(user_id) NOT NULL
 );
 
 CREATE TABLE consultations (
     consultation_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    doctor_id UUID REFERENCES doctor_profile(doctor_profile_id) NOT NULL,
-    record_id UUID REFERENCES record(record_id) NOT NULL
+    doctor_id UUID REFERENCES doctor_profiles(doctor_profile_id) NOT NULL,
+    record_id UUID REFERENCES records(record_id) NOT NULL
 );
 
 CREATE TABLE diagnoses (
@@ -63,7 +63,7 @@ CREATE TABLE symptoms (
 
 CREATE TABLE prescriptions (
     prescription_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    record_id UUID REFERENCES record(record_id) NOT NULL,
+    record_id UUID REFERENCES records(record_id) NOT NULL,
     drug_name TEXT NOT NULL,
     doses_in_mg INT NOT NULL,
     regiment_per_day INT NOT NULL,

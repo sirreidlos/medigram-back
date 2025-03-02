@@ -24,6 +24,7 @@
 mod auth;
 pub mod canonical_json;
 mod jwt;
+mod model;
 mod protocol;
 mod route;
 mod schema;
@@ -37,7 +38,8 @@ use axum::{
     routing::{get, post},
 };
 use jwt::AuthError;
-use protocol::Nik;
+use protocol::{ConsentError, Nik};
+use route::consent_required_example;
 use std::{collections::HashSet, time::Duration};
 use tracing::info;
 use uuid::Uuid;
@@ -54,6 +56,7 @@ use tracing_subscriber::{
 enum AppError {
     InternalError,
     Auth(AuthError),
+    Consent(ConsentError),
 }
 
 impl IntoResponse for AppError {
@@ -64,6 +67,9 @@ impl IntoResponse for AppError {
                 "An internal error has occured",
             ),
             AppError::Auth(auth_error) => return auth_error.into_response(),
+            AppError::Consent(consent_error) => {
+                return consent_error.into_response();
+            }
         };
 
         let body = Json(serde_json::json!({
@@ -77,6 +83,12 @@ impl IntoResponse for AppError {
 impl From<AuthError> for AppError {
     fn from(value: AuthError) -> Self {
         Self::Auth(value)
+    }
+}
+
+impl From<ConsentError> for AppError {
+    fn from(value: ConsentError) -> Self {
+        Self::Consent(value)
     }
 }
 
@@ -133,6 +145,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(handler))
+        .route("/example-consent", post(consent_required_example))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

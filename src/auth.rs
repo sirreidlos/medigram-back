@@ -1,4 +1,9 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json, extract::State, handler::HandlerWithoutStateExt, http::StatusCode,
+};
+use base64::Engine;
+use base64::engine::general_purpose;
+use ed25519_compact::{KeyPair, PublicKey, Seed};
 use rand::{Rng, distr::Alphanumeric, rng};
 use sqlx::{Pool, Postgres};
 use tracing::{debug, error, info};
@@ -7,6 +12,7 @@ use argon2::{
     Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
     password_hash::{SaltString, rand_core::OsRng},
 };
+use uuid::Uuid;
 
 use crate::{
     AppError, AppState,
@@ -14,7 +20,7 @@ use crate::{
         AuthError, AuthResponse, LoginRequest, RefreshRequest, RegisterRequest,
         create_access_token, get_token, verify_token,
     },
-    schema::User,
+    schema::{DeviceKey, User},
 };
 
 /// Session ID character length
@@ -65,10 +71,10 @@ pub async fn register(
 
 async fn query_user(
     email: &str,
-    db_pool: Pool<Postgres>,
+    db_pool: &Pool<Postgres>,
 ) -> Result<User, AppError> {
     sqlx::query_as!(User, "SELECT * FROM users WHERE email = $1", email)
-        .fetch_one(&db_pool)
+        .fetch_one(db_pool)
         .await
         .map_err(|e| match e {
             sqlx::Error::RowNotFound => AuthError::UserNotFound.into(),
@@ -79,6 +85,47 @@ async fn query_user(
         })
 }
 
+async fn store_public_key(
+    device_id: Uuid,
+    user_id: Uuid,
+    public_key: PublicKey,
+    db_pool: &Pool<Postgres>,
+) -> Result<(), AppError> {
+    sqlx::query!(
+        "INSERT INTO device_keys (device_id, user_id, public_key_pem, \
+         revoked) VALUES ($1, $2, $3, $4)",
+        device_id,
+        user_id,
+        public_key.to_pem(),
+        false
+    )
+    .execute(db_pool)
+    .await
+    .map_err(|e| {
+        error!("inserting public key: {:?}", e);
+        AppError::InternalError
+    })?;
+
+    Ok(())
+}
+
+pub async fn retrieve_public_key(
+    device_id: Uuid,
+    db_pool: &Pool<Postgres>,
+) -> Result<DeviceKey, AppError> {
+    sqlx::query_as!(
+        DeviceKey,
+        "SELECT * FROM device_keys WHERE device_id = $1",
+        device_id
+    )
+    .fetch_one(db_pool)
+    .await
+    .map_err(|e| {
+        error!("inserting public key: {:?}", e);
+        AppError::InternalError
+    })
+}
+
 pub async fn login(
     State(state): State<AppState>,
     Json(payload): Json<LoginRequest>,
@@ -86,7 +133,7 @@ pub async fn login(
     // Find the user
     let email = payload.email;
     let password = payload.password;
-    let user: User = query_user(&email, state.db_pool).await?;
+    let user: User = query_user(&email, &state.db_pool).await?;
 
     // verify user
     let password_hash_str: String = user.password_hash;
@@ -108,13 +155,21 @@ pub async fn login(
     }
 
     // create tokens
-    let user_id = user.user_id.to_string();
-    let (access_token, expires_in) = create_access_token(&user_id)?;
+    let user_id = user.user_id;
+    let (access_token, expires_in) = create_access_token(&user_id.to_string())?;
     let session_id = create_session_id();
+    let device_id = Uuid::new_v4();
+    let key_pair = KeyPair::from_seed(Seed::generate());
+
+    let private_key = general_purpose::STANDARD.encode(key_pair.sk.to_vec());
+
+    store_public_key(device_id, user_id, key_pair.pk, &state.db_pool).await?;
 
     state
         .recognized_session_id
         .insert(session_id.clone(), user.user_id);
+
+    info!("User {email} logged in");
 
     // Return the tokens
     Ok(Json(AuthResponse {
@@ -122,6 +177,8 @@ pub async fn login(
         session_id,
         token_type: "Bearer".to_string(),
         expires_in,
+        device_id,
+        private_key,
     }))
 }
 
