@@ -49,10 +49,6 @@ pub struct RefreshRequest {
     pub refresh_token: String,
 }
 
-pub struct AuthUser {
-    pub user_id: String,
-}
-
 // JWT signing keys
 pub struct Keys {
     encoding: EncodingKey,

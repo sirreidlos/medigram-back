@@ -7,18 +7,24 @@ use argon2::{
     Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
     password_hash::{SaltString, rand_core::OsRng},
 };
+use uuid::Uuid;
 
 use crate::{
     AppError, AppState,
     jwt::{
         AuthError, AuthResponse, LoginRequest, RefreshRequest, RegisterRequest,
-        create_access_token, get_token, verify_token,
+        create_access_token, get_session_id, get_token, verify_token,
     },
     schema::User,
 };
 
 /// Session ID character length
 pub const SESSION_ID_LEN: usize = 64;
+
+#[derive(Clone)]
+pub struct AuthUser {
+    pub user_id: Uuid,
+}
 
 /// Generates a [`SESSION_ID_LEN`] characters long string for `session_id`
 fn create_session_id() -> String {
@@ -137,15 +143,20 @@ async fn logout(
 pub async fn auth_middleware(
     State(state): State<AppState>,
     headers: axum::http::HeaderMap,
-    request: axum::extract::Request,
+    mut request: axum::extract::Request,
     next: axum::middleware::Next,
 ) -> Result<axum::response::Response, AuthError> {
-    match get_token(&headers) {
-        Some(session_id)
-            if state.recognized_session_id.contains_key(session_id) =>
-        {
-            let response = next.run(request).await;
-            Ok(response)
+    match get_session_id(&headers) {
+        Some(session_id) => {
+            if let Some(user_id) = state.recognized_session_id.get(session_id) {
+                let data = AuthUser { user_id };
+                request.extensions_mut().insert(data);
+                let response = next.run(request).await;
+
+                Ok(response)
+            } else {
+                Err(AuthError::InvalidToken)
+            }
         }
         _ => Err(AuthError::InvalidToken),
     }

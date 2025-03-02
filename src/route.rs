@@ -1,11 +1,13 @@
-use axum::{extract::State, response::Html};
+use axum::{Extension, extract::State, response::Html};
 use rand::Rng;
 use tracing::trace;
 
-use crate::{AppState, canonical_json::CanonicalJson};
+use crate::{AppState, auth::AuthUser, canonical_json::CanonicalJson};
 
-pub(crate) async fn handler() -> Html<&'static str> {
-    Html("<h1>Hello, World!</h1>")
+pub(crate) async fn handler(
+    Extension(user): Extension<AuthUser>,
+) -> Html<String> {
+    Html(format!("<h1>Hello, {}!</h1>", user.user_id))
 }
 
 pub(crate) async fn request_nonce(
