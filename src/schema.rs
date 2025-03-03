@@ -16,60 +16,61 @@ pub struct User {
 }
 
 pub struct UserDetail {
-    user_id: Uuid,
-    nik: Nik,
-    name: String,
-    dob: NaiveDate,
-    gender: char,
-    height_in_cm: f64,
-    weight_in_kg: f64,
+    pub user_id: Uuid,
+    pub nik: Nik,
+    pub name: String,
+    pub dob: NaiveDate,
+    pub gender: char,
+    pub height_in_cm: f64,
+    pub weight_in_kg: f64,
 }
 
 pub struct Allergy {
-    allergy_id: Uuid,
-    user_id: Uuid,
-    allergy: String,
+    pub allergy_id: Uuid,
+    pub user_id: Uuid,
+    pub allergy: String,
 }
 
 // TODO map device_id to public_key in an lru cache
+// for now its fine not to have a cache, reconsider this if you're scaling up
 pub struct DeviceKey {
-    device_id: Uuid,
-    user_id: Uuid,
-    public_key: PublicKey,
-    revoked: bool,
+    pub device_id: Uuid,
+    pub user_id: Uuid,
+    pub public_key_pem: String,
+    pub revoked: bool,
 }
 
 pub struct Record {
-    record_id: Uuid,
-    user_id: Uuid,
+    pub record_id: Uuid,
+    pub user_id: Uuid,
 }
 
 pub struct Consultation {
-    consultation_id: Uuid,
-    doctor_id: Uuid,
-    record_id: Uuid,
-    diagnoses: Vec<Diagnosis>,
-    symptoms: Vec<Symptom>,
+    pub consultation_id: Uuid,
+    pub doctor_id: Uuid,
+    pub record_id: Uuid,
+    pub diagnoses: Vec<Diagnosis>,
+    pub symptoms: Vec<Symptom>,
 }
 
 pub struct Diagnosis {
-    diagnosis_id: Uuid,
-    consultation_id: Uuid,
-    diagnosis: String,
+    pub diagnosis_id: Uuid,
+    pub consultation_id: Uuid,
+    pub diagnosis: String,
 }
 
 pub struct Symptom {
-    symptom_id: Uuid,
-    consultation_id: Uuid,
-    symptom: String,
+    pub symptom_id: Uuid,
+    pub consultation_id: Uuid,
+    pub symptom: String,
 }
 
 pub struct Prescription {
-    prescription_id: Uuid,
-    record_id: Uuid,
-    drug_name: String,
-    doses_in_mg: u64,
-    regiment_per_day: u8,
-    quantity_per_dose: u8,
-    instruction: String,
+    pub prescription_id: Uuid,
+    pub record_id: Uuid,
+    pub drug_name: String,
+    pub doses_in_mg: u64,
+    pub regiment_per_day: u8,
+    pub quantity_per_dose: u8,
+    pub instruction: String,
 }

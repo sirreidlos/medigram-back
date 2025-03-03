@@ -1,6 +1,12 @@
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::response::Response;
 use num_traits::ToPrimitive;
 use sqlx::types::BigDecimal;
 use std::fmt::Display;
+use tracing::error;
 
 use base64::Engine;
 use ed25519_compact::{PublicKey, Signature};
@@ -8,6 +14,9 @@ use serde::de::Error;
 use serde::{Deserialize, Serialize};
 use serde_json_canonicalizer::to_string;
 use uuid::Uuid;
+
+use crate::auth::retrieve_public_key;
+use crate::{AppError, AppState};
 
 /// Since NIK only consists of 16 digits, should it be higher than this number
 /// (10^17-1), it means that it's an invalid NIK.
@@ -58,15 +67,15 @@ impl From<BigDecimal> for Nik {
 /// amount of time, in which it will be kept until either it expires or a client
 /// sent a message with a consent that uses the nonce.
 #[derive(Debug, Serialize, Deserialize)]
-struct Consent {
-    signer_device_id: Uuid,
-    nonce: [u8; 16],
+pub struct Consent {
+    pub signer_device_id: Uuid,
+    pub nonce: [u8; 16],
 
     #[serde(
         serialize_with = "serialize_signature",
         deserialize_with = "deserialize_signature"
     )]
-    signature: Signature,
+    pub signature: Signature,
 }
 
 impl Consent {
@@ -84,6 +93,63 @@ impl Consent {
         }
     }
 }
+
+pub enum ConsentError {
+    NonConsent,
+    NonceConsumed,
+}
+
+impl IntoResponse for ConsentError {
+    fn into_response(self) -> Response {
+        let (status, error_message) = match self {
+            ConsentError::NonConsent => {
+                (StatusCode::UNAUTHORIZED, "Party did not consent")
+            }
+            ConsentError::NonceConsumed => {
+                (StatusCode::UNAUTHORIZED, "Nonce has been used")
+            }
+        };
+
+        let body = Json(serde_json::json!({
+            "error": error_message,
+        }));
+
+        (status, body).into_response()
+    }
+}
+
+// fn get_consent(request: &axum::extract::Request) -> Result<Consent, AppError>
+// {     // get the json body's 'consent' object and deserialize it into Consent
+//     // struct
+//     todo!()
+// }
+
+// pub async fn consent_middleware(
+//     State(state): State<AppState>,
+//     headers: axum::http::HeaderMap,
+//     request: axum::extract::Request,
+//     next: axum::middleware::Next,
+// ) -> Result<axum::response::Response, AppError> {
+//     // parse the request body into a struct for
+//     //
+
+//     let consent: Consent = todo!();
+//     let device_id = consent.signer_device_id;
+//     let key_info = retrieve_public_key(device_id, &state.db_pool).await?;
+//     let public_key =
+//         PublicKey::from_pem(&key_info.public_key_pem).map_err(|e| {
+//             error!("error while converting pem to pk: {:?}", e);
+//             AppError::InternalError
+//         })?;
+//     let is_valid = get_consent(&request)?;
+
+//     if consent.verify(&public_key) {
+//         let response = next.run(request).await;
+//         Ok(response)
+//     } else {
+//         Err(ConsentError::NonConsent.into())
+//     }
+// }
 
 fn serialize_signature<S>(
     signature: &ed25519_compact::Signature,

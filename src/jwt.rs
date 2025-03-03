@@ -41,6 +41,9 @@ pub struct AuthResponse {
     pub session_id: String,
     pub token_type: String,
     pub expires_in: i64,
+    pub device_id: Uuid,
+    // base 64
+    pub private_key: String,
 }
 
 // Refresh token request
@@ -60,6 +63,7 @@ static ACCESS_TOKEN_TTL: Duration = Duration::minutes(15);
 pub static SESSION_TTL: Duration = Duration::days(30);
 
 static KEYS: Lazy<Keys> = Lazy::new(|| {
+    // TODO set key properly
     let secret = "your_jwt_secret_key_here_make_this_random_and_secure";
     Keys::new(secret.as_bytes())
 });
