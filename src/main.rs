@@ -38,8 +38,9 @@ use axum::{
     routing::{get, post},
 };
 use jwt::AuthError;
-use protocol::{ConsentError, Nik};
-use route::consent_required_example;
+use protocol::{ConsentError, Nik, Nonce};
+use route::{consent_required_example, get_user, get_user_detail};
+use serde::Serialize;
 use std::{collections::HashSet, time::Duration};
 use tracing::info;
 use uuid::Uuid;
@@ -55,9 +56,16 @@ use tracing_subscriber::{
 
 enum AppError {
     InternalError,
+    InvalidNik,
+    RowNotFound,
+    BadPayload,
     Auth(AuthError),
     Consent(ConsentError),
 }
+
+// actual decoration trait check
+// pls do the check manually ty
+pub type APIResult<T: Serialize> = std::result::Result<Json<T>, AppError>;
 
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
@@ -70,6 +78,14 @@ impl IntoResponse for AppError {
             AppError::Consent(consent_error) => {
                 return consent_error.into_response();
             }
+            AppError::InvalidNik => (StatusCode::BAD_REQUEST, "Invalid NIK"),
+            AppError::BadPayload => {
+                (StatusCode::BAD_REQUEST, "Bad Payload Data")
+            }
+            AppError::RowNotFound => (
+                StatusCode::NOT_FOUND,
+                "Resource does not exist in the database",
+            ),
         };
 
         let body = Json(serde_json::json!({
@@ -94,17 +110,17 @@ impl From<ConsentError> for AppError {
 
 #[derive(Clone)]
 struct AppState {
-    nonce_cache: Cache<[u8; 16], ()>,
+    nonce_cache: Cache<Nonce, ()>,
     db_pool: Pool<Postgres>,
     recognized_session_id: Cache<String, Uuid>,
 }
 
 impl AppState {
-    fn add_nonce(&self, nonce: [u8; 16]) {
+    fn add_nonce(&self, nonce: Nonce) {
         self.nonce_cache.insert(nonce, ());
     }
 
-    fn remove_nonce(&self, nonce: [u8; 16]) {
+    fn remove_nonce(&self, nonce: Nonce) {
         self.nonce_cache.invalidate(&nonce);
     }
 }
@@ -146,10 +162,13 @@ async fn main() {
     let app = Router::new()
         .route("/", get(handler))
         .route("/example-consent", post(consent_required_example))
+        .route("/get-user", get(get_user))
+        .route("/get-user-detail", get(get_user_detail))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
         ))
+        .route("/test", get(get_user))
         .route("/request-nonce", get(request_nonce))
         .route("/login", post(auth::login))
         .route("/register", post(auth::register))

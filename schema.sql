@@ -10,19 +10,21 @@ CREATE TABLE users (
 
 CREATE TABLE user_details (
     user_id UUID PRIMARY KEY REFERENCES users(user_id),
-    nik DECIMAL(16) NOT NULL,
+    nik BIGINT NOT NULL,
     name TEXT NOT NULL,
     dob DATE NOT NULL,
-    gender CHAR(1) NOT NULL,
-    height_in_cm DOUBLE NOT NULL,
-    weight_in_kg DOUBLE NOT NULL
+    gender CHAR NOT NULL,
+    height_in_cm REAL NOT NULL,
+    weight_in_kg REAL NOT NULL
 );
 
 CREATE TABLE doctor_profiles (
     doctor_profile_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(user_id) NOT NULL,
     practice_permit TEXT NOT NULL,
-    practice_address TEXT NOT NULL -- Maybe separate the address into smaller units?
+    practice_address TEXT NOT NULL, -- Maybe separate the address into smaller units?
+    approved BOOLEAN NOT NULL,
+    approved_time TIMESTAMPTZ
 );
 
 CREATE TABLE allergies (
@@ -31,6 +33,9 @@ CREATE TABLE allergies (
     allergy TEXT NOT NULL
 );
 
+-- TODO change this revoked to a nullable date
+-- in a case where the user shows the signature and then instantly logs out,
+-- we can make sure to keep the key until at least for the QR to expire (7d)
 CREATE TABLE device_keys (
     device_id UUID  PRIMARY KEY NOT NULL,
     user_id UUID REFERENCES users(user_id) NOT NULL,

@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM doctor_profiles WHERE doctor_profile_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "doctor_profile_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "practice_permit",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "practice_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "approved",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "approved_time",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "079fa0dc433d7d7b977b46f94ebfb20ea5d4a256c70aef96aa2b8841fbdafdcc"
+}

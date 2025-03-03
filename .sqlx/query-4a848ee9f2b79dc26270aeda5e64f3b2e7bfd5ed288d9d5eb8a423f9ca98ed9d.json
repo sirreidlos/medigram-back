@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT user_id, nik, name, dob, gender, height_in_cm, weight_in_kg FROM user_details WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "nik",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "dob",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 4,
+        "name": "gender",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "height_in_cm",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 6,
+        "name": "weight_in_kg",
+        "type_info": "Float4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4a848ee9f2b79dc26270aeda5e64f3b2e7bfd5ed288d9d5eb8a423f9ca98ed9d"
+}

@@ -4,7 +4,6 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
 use num_traits::ToPrimitive;
-use sqlx::types::BigDecimal;
 use std::fmt::Display;
 use tracing::error;
 
@@ -20,45 +19,48 @@ use crate::{AppError, AppState};
 
 /// Since NIK only consists of 16 digits, should it be higher than this number
 /// (10^17-1), it means that it's an invalid NIK.
-const NIK_UPPERBOUND: u64 = 9_999_999_999_999_999;
+pub const NIK_UPPERBOUND: i64 = 9_999_999_999_999_999;
 
 /// Since NIK only consists of 16 digits, should it be lower than this number
 /// (10^15), it means that it's an invalid NIK.
-const NIK_LOWERBOUND: u64 = 1_000_000_000_000_000;
+pub const NIK_LOWERBOUND: i64 = 1_000_000_000_000_000;
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+// #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 /// Wrapper struct for `Nomor Induk Kependudukan` containing exactly 16
 /// digits.
-#[derive(Hash, Eq, PartialEq)]
-pub struct Nik(u64);
+// #[derive(Hash, Eq, PartialEq)]
+pub type Nik = i64;
+pub type Nonce = [u8; 16];
+// impl Display for Nik {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         self.0.fmt(f)
+//     }
+// }
 
-impl Display for Nik {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
+// impl TryFrom<u64> for Nik {
+//     // there's only two possible ways for it to err
+//     // we can just throw a unit type for the error
+//     type Error = ();
 
-impl TryFrom<u64> for Nik {
-    // there's only two possible ways for it to err
-    // we can just throw a unit type for the error
-    type Error = ();
+//     fn try_from(value: u64) -> Result<Self, Self::Error> {
+//         if !(NIK_LOWERBOUND..=NIK_UPPERBOUND).contains(&value) {
+//             return Err(());
+//         }
 
-    fn try_from(value: u64) -> Result<Self, Self::Error> {
-        if !(NIK_LOWERBOUND..=NIK_UPPERBOUND).contains(&value) {
-            return Err(());
-        }
+//         Ok(Self(value))
+//     }
+// }
 
-        Ok(Self(value))
-    }
-}
+// impl TryFrom<BigDecimal> for Nik {
+//     type Error = ();
 
-impl From<BigDecimal> for Nik {
-    fn from(value: BigDecimal) -> Self {
-        // TODO holy fix this please
-        // or atleast guarantee that it wont crash
-        Self(value.to_u64().unwrap())
-    }
-}
+//     fn try_from(value: BigDecimal) -> Result<Self, Self::Error> {
+//         match value.to_u64() {
+//             Some(v) => Ok(Self(v)),
+//             None => Err(()),
+//         }
+//     }
+// }
 
 /// The consent.
 ///
@@ -69,7 +71,7 @@ impl From<BigDecimal> for Nik {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Consent {
     pub signer_device_id: Uuid,
-    pub nonce: [u8; 16],
+    pub nonce: Nonce,
 
     #[serde(
         serialize_with = "serialize_signature",
@@ -97,16 +99,24 @@ impl Consent {
 pub enum ConsentError {
     NonConsent,
     NonceConsumed,
+    DeviceNotFound,
+    UserDeviceMismatch,
 }
 
 impl IntoResponse for ConsentError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
             ConsentError::NonConsent => {
-                (StatusCode::UNAUTHORIZED, "Party did not consent")
+                (StatusCode::UNAUTHORIZED, "User did not consent")
             }
             ConsentError::NonceConsumed => {
                 (StatusCode::UNAUTHORIZED, "Nonce has been used")
+            }
+            ConsentError::DeviceNotFound => {
+                (StatusCode::NOT_FOUND, "Device not found")
+            }
+            ConsentError::UserDeviceMismatch => {
+                (StatusCode::BAD_REQUEST, "User does not own this device")
             }
         };
 
