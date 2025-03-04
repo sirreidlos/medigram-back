@@ -4,7 +4,8 @@ use ed25519_compact::PublicKey;
 use moka::sync::Cache;
 use num_traits::ToPrimitive;
 use rand::Rng;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 use sqlx::{Pool, Postgres, Type, query, query_as};
 use tracing::{error, trace};
 use uuid::Uuid;
@@ -18,18 +19,16 @@ use crate::{
         Consent, ConsentError, NIK_LOWERBOUND, NIK_UPPERBOUND, Nik, Nonce,
     },
     schema::{
-        Allergy, Consultation, DeviceKey, Diagnosis, DoctorProfile,
-        Prescription, Record, Symptom, User, UserDetail,
+        Allergy, Consultation, DeviceKey, DoctorProfile, Record, User,
+        UserDetail,
     },
 };
 
-pub(crate) async fn handler(
-    Extension(user): Extension<AuthUser>,
-) -> Html<String> {
+pub async fn handler(Extension(user): Extension<AuthUser>) -> Html<String> {
     Html(format!("<h1>Hello, {}!</h1>", user.user_id))
 }
 
-pub(crate) async fn request_nonce(
+pub async fn request_nonce(
     State(state): State<AppState>,
 ) -> CanonicalJson<Nonce> {
     let mut nonce: Nonce = [0u8; 16];
@@ -71,7 +70,7 @@ pub async fn consent_required_example(
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct UserDetailPayload {
     pub nik: Nik,
     pub name: String,
@@ -97,27 +96,37 @@ pub struct DoctorId {
     pub doctor_id: Uuid,
 }
 
+#[derive(Serialize)]
+pub struct UserOpaque {
+    user_id: Uuid,
+    email: String,
+}
+
 pub async fn get_user(
     State(state): State<AppState>,
     Extension(AuthUser { user_id }): Extension<AuthUser>,
-) -> APIResult<User> {
-    query_as!(User, "SELECT * FROM users WHERE user_id = $1", user_id)
-        .fetch_one(&state.db_pool)
-        .await
-        .map(Json)
-        .map_err(|e| match e {
-            sqlx::Error::RowNotFound => AppError::RowNotFound,
-            e => {
-                error!("Error while fetching user for {}: {:?}", user_id, e);
-                AppError::InternalError
-            }
-        })
+) -> APIResult<Json<UserOpaque>> {
+    query_as!(
+        UserOpaque,
+        "SELECT user_id, email FROM users WHERE user_id = $1",
+        user_id
+    )
+    .fetch_one(&state.db_pool)
+    .await
+    .map(Json)
+    .map_err(|e| match e {
+        sqlx::Error::RowNotFound => AppError::RowNotFound,
+        e => {
+            error!("Error while fetching user for {}: {:?}", user_id, e);
+            AppError::InternalError
+        }
+    })
 }
 
 pub async fn get_user_detail(
     State(state): State<AppState>,
     Extension(AuthUser { user_id }): Extension<AuthUser>,
-) -> APIResult<UserDetail> {
+) -> APIResult<Json<UserDetail>> {
     let row = sqlx::query!(
         "SELECT user_id, nik, name, dob, gender, height_in_cm, weight_in_kg \
          FROM user_details WHERE user_id = $1",
@@ -145,8 +154,12 @@ pub async fn set_user_detail(
     State(state): State<AppState>,
     Extension(AuthUser { user_id }): Extension<AuthUser>,
     Json(payload): Json<UserDetailPayload>,
-) -> APIResult<(StatusCode, String)> {
-    if (!NIK_LOWERBOUND..=NIK_UPPERBOUND).contains(&payload.nik) {
+) -> APIResult<(StatusCode, Json<Value>)> {
+    trace!(
+        "set_user_details\nuser_id: {}\npayload: {:?}",
+        user_id, payload
+    );
+    if !(NIK_LOWERBOUND..=NIK_UPPERBOUND).contains(&payload.nik) {
         return Err(AppError::InvalidNik);
     }
 
@@ -168,17 +181,17 @@ pub async fn set_user_detail(
         AppError::InternalError
     })?;
 
-    Ok(Json((
+    Ok((
         StatusCode::CREATED,
-        "Successfully set user detail".to_string(),
-    )))
+        Json(json!({"message": "Successfully set user detail"})),
+    ))
 }
 
 pub async fn get_doctor_profile(
     State(state): State<AppState>,
     Extension(AuthUser { user_id }): Extension<AuthUser>,
     Json(DoctorId { doctor_id }): Json<DoctorId>,
-) -> APIResult<DoctorProfile> {
+) -> APIResult<Json<DoctorProfile>> {
     query_as!(
         DoctorProfile,
         "SELECT * FROM doctor_profiles WHERE doctor_profile_id = $1",
@@ -203,7 +216,7 @@ pub async fn set_doctor_profile(
         practice_permit,
         practice_address,
     }): Json<DoctorProfilePayload>,
-) -> APIResult<(StatusCode, String)> {
+) -> APIResult<(StatusCode, Json<Value>)> {
     query!(
         "INSERT INTO doctor_profiles (user_id, practice_permit, \
          practice_address, approved) VALUES ($1, $2, $3, $4)",
@@ -222,16 +235,16 @@ pub async fn set_doctor_profile(
         AppError::InternalError
     })?;
 
-    Ok(Json((
-        StatusCode::CREATED,
-        "Successfully submitted your application".to_string(),
-    )))
+    Ok((
+        StatusCode::OK,
+        Json(json!({ "message": "Successfully submitted your application" })),
+    ))
 }
 
 pub async fn get_allergies(
     State(state): State<AppState>,
     Extension(AuthUser { user_id }): Extension<AuthUser>,
-) -> APIResult<Vec<Allergy>> {
+) -> APIResult<Json<Vec<Allergy>>> {
     query_as!(
         Allergy,
         "SELECT * FROM allergies WHERE user_id = $1",
@@ -250,27 +263,32 @@ pub async fn add_allergy(
     State(state): State<AppState>,
     Extension(AuthUser { user_id }): Extension<AuthUser>,
     Json(AllergyPayload { allergy }): Json<AllergyPayload>,
-) -> APIResult<(StatusCode, String)> {
-    query!(
+) -> APIResult<(StatusCode, Json<Value>)> {
+    let _ = query!(
         "INSERT INTO allergies (user_id, allergy) VALUES ($1, $2)",
         user_id,
         allergy
     )
     .execute(&state.db_pool)
     .await
-    .map(|_| (StatusCode::CREATED, "allergy added".to_string()))
     .map(Json)
     .map_err(|e| {
         error!("Error while adding allergy for {}: {:?}", user_id, e);
         AppError::InternalError
-    })
+    })?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(json!({ "message": "allergy added" })),
+    ))
 }
 
+#[axum::debug_handler]
 pub async fn remove_allergy(
     State(state): State<AppState>,
     Extension(AuthUser { user_id }): Extension<AuthUser>,
     Json(Allergy { allergy_id, .. }): Json<Allergy>,
-) -> APIResult<(StatusCode, String)> {
+) -> APIResult<(StatusCode, Json<Value>)> {
     let query_res: sqlx::postgres::PgQueryResult =
         query!("DELETE FROM allergies WHERE allergy_id = $1", allergy_id)
             .execute(&state.db_pool)
@@ -285,13 +303,16 @@ pub async fn remove_allergy(
         return Err(AppError::RowNotFound);
     }
 
-    Ok(Json((StatusCode::OK, "allergy removed".to_string())))
+    Ok((
+        StatusCode::OK,
+        Json(json!({ "message": "allergy removed" })),
+    ))
 }
 
 pub async fn get_records(
     State(state): State<AppState>,
     Extension(AuthUser { user_id }): Extension<AuthUser>,
-) -> APIResult<Vec<Record>> {
+) -> APIResult<Json<Vec<Record>>> {
     query_as!(Record, "SELECT * FROM records WHERE user_id = $1", user_id)
         .fetch_all(&state.db_pool)
         .await
@@ -302,21 +323,31 @@ pub async fn get_records(
         })
 }
 
+#[derive(Deserialize)]
+pub struct RecordIDPayload {
+    record_id: Uuid,
+}
+
 pub async fn get_consultations(
     State(state): State<AppState>,
     Extension(AuthUser { user_id }): Extension<AuthUser>,
-) -> APIResult<Vec<Consultation>> {
-    query_as!(Record, "SELECT * FROM records WHERE user_id = $1", user_id)
-        .fetch_all(&state.db_pool)
-        .await
-        .map(Json)
-        .map_err(|e| {
-            error!(
-                "Error while retrieving consultations for {}: {:?}",
-                user_id, e
-            );
-            AppError::InternalError
-        })
+    Json(RecordIDPayload { record_id }): Json<RecordIDPayload>,
+) -> APIResult<Json<Vec<Consultation>>> {
+    query_as!(
+        Consultation,
+        "SELECT * FROM consultations WHERE record_id = $1",
+        record_id
+    )
+    .fetch_all(&state.db_pool)
+    .await
+    .map(Json)
+    .map_err(|e| {
+        error!(
+            "Error while retrieving consultations for {}: {:?}",
+            user_id, e
+        );
+        AppError::InternalError
+    })
 }
 
 #[derive(Deserialize)]
@@ -401,46 +432,19 @@ pub async fn add_consultation(
     let _ =
         verify_consent(consent, user_id, &state.db_pool, &state.nonce_cache)
             .await?;
-    // let nonce = consent.nonce;
-    // if !state.nonce_cache.contains_key(&nonce) {
-    //     return Err(ConsentError::NonceConsumed.into());
-    // }
-    // state.nonce_cache.remove(&nonce);
 
-    // let device_id = consent.signer_device_id;
-    // let device_key = query_as!(
-    //     DeviceKey,
-    //     "SELECT * FROM device_keys WHERE device_id = $1",
-    //     device_id
-    // )
-    // .fetch_one(&state.db_pool)
-    // .await
-    // .map_err(|e| match e {
-    //     sqlx::Error::RowNotFound => ConsentError::DeviceNotFound.into(),
-    //     e => {
-    //         error!(
-    //             "Error while fetching device key for {}: {:?}",
-    //             device_id, e
-    //         );
-    //         AppError::InternalError
-    //     }
-    // })?;
-
-    // if device_key.user_id != user_id {
-    //     return Err(ConsentError::UserDeviceMismatch.into());
-    // }
-
-    // let pk = PublicKey::from_pem(&device_key.public_key_pem).map_err(|e| {
-    //     error!(
-    //         "Error occured while parsing pem to pk: pem: {}\nerror: {:?}",
-    //         device_key.public_key_pem, e
-    //     );
-    //     AppError::InternalError
-    // })?;
-
-    // if !consent.verify(&pk) {
-    //     return Err(ConsentError::NonConsent.into());
-    // }
+    let record = query_as!(
+        Record,
+        "INSERT INTO records (user_id) VALUES ($1) RETURNING record_id, \
+         user_id",
+        user_id
+    )
+    .fetch_one(&state.db_pool)
+    .await
+    .map_err(|e| {
+        error!("Error occured while inserting into records: {:?}", e);
+        AppError::InternalError
+    })?;
 
     todo!()
 }

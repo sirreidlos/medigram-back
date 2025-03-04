@@ -5,6 +5,7 @@ use base64::Engine;
 use base64::engine::general_purpose;
 use ed25519_compact::{KeyPair, PublicKey, Seed};
 use rand::{Rng, distr::Alphanumeric, rng};
+use serde_json::{Value, json};
 use sqlx::{Pool, Postgres};
 use tracing::{debug, error, info};
 // use tower_http::{cors::{Any, CorsLayer}, limit::RequestBodyLimitLayer};
@@ -44,7 +45,7 @@ fn create_session_id() -> String {
 pub async fn register(
     State(state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
-) -> Result<(StatusCode, String), AppError> {
+) -> Result<(StatusCode, Json<Value>), AppError> {
     let email = payload.email;
     let password = payload.password;
     let salt = SaltString::generate(&mut OsRng);
@@ -71,7 +72,10 @@ pub async fn register(
 
     info!("Successfully registered email: {}", email);
 
-    Ok((StatusCode::CREATED, "successfully registered".into()))
+    Ok((
+        StatusCode::CREATED,
+        Json(json!({ "message": "registration successful" })),
+    ))
 }
 
 async fn query_user(
@@ -117,7 +121,7 @@ async fn store_public_key(
 pub async fn retrieve_public_key(
     device_id: Uuid,
     db_pool: &Pool<Postgres>,
-) -> Result<DeviceKey, AppError> {
+) -> Result<Json<DeviceKey>, AppError> {
     sqlx::query_as!(
         DeviceKey,
         "SELECT * FROM device_keys WHERE device_id = $1",
@@ -125,6 +129,7 @@ pub async fn retrieve_public_key(
     )
     .fetch_one(db_pool)
     .await
+    .map(Json)
     .map_err(|e| {
         error!("inserting public key: {:?}", e);
         AppError::InternalError
@@ -190,10 +195,10 @@ pub async fn login(
 async fn logout(
     State(state): State<AppState>,
     Json(payload): Json<RefreshRequest>,
-) -> Result<StatusCode, AppError> {
+) -> Result<(StatusCode, Json<Value>), AppError> {
     // remove the refresh token from the whitelist
     state.recognized_session_id.remove(&payload.refresh_token);
-    Ok(StatusCode::OK)
+    Ok((StatusCode::OK, Json(json!({ "message": "logged out" }))))
 }
 
 pub async fn auth_middleware(

@@ -35,12 +35,17 @@ use axum::{
     Json,
     http::StatusCode,
     response::IntoResponse,
-    routing::{get, post},
+    routing::{delete, get, post, put},
 };
 use jwt::AuthError;
 use protocol::{ConsentError, Nik, Nonce};
-use route::{consent_required_example, get_user, get_user_detail};
+use route::{
+    add_allergy, add_consultation, consent_required_example, get_allergies,
+    get_consultations, get_doctor_profile, get_records, get_user,
+    get_user_detail, remove_allergy, set_doctor_profile, set_user_detail,
+};
 use serde::Serialize;
+use serde_json::Value;
 use std::{collections::HashSet, time::Duration};
 use tracing::info;
 use uuid::Uuid;
@@ -65,7 +70,9 @@ enum AppError {
 
 // actual decoration trait check
 // pls do the check manually ty
-pub type APIResult<T: Serialize> = std::result::Result<Json<T>, AppError>;
+pub type APIResult<T> = Result<T, AppError>;
+// pub type APIResultJson<T: Serialize> = APIResult<Json<T>>;
+// pub type APIResultCodeMessage = APIResult<(StatusCode, Json<Value>)>;
 
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
@@ -160,15 +167,22 @@ async fn main() {
         .allow_headers(Any);
 
     let app = Router::new()
+        .route("/user", get(get_user))
+        .route("/user-detail", get(get_user_detail))
+        .route("/user-detail", put(set_user_detail))
+        .route("/doctor-profile", get(get_doctor_profile))
+        .route("/doctor-profile", post(set_doctor_profile))
+        .route("/allergy", get(get_allergies))
+        .route("/allergy", post(add_allergy))
+        .route("/allergy", delete(remove_allergy))
+        .route("/record", get(get_records))
+        .route("/consultation", get(get_consultations))
+        .route("/consultation", post(add_consultation))
         .route("/", get(handler))
-        .route("/example-consent", post(consent_required_example))
-        .route("/get-user", get(get_user))
-        .route("/get-user-detail", get(get_user_detail))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
         ))
-        .route("/test", get(get_user))
         .route("/request-nonce", get(request_nonce))
         .route("/login", post(auth::login))
         .route("/register", post(auth::register))

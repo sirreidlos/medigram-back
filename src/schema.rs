@@ -38,7 +38,7 @@ pub struct DoctorProfile {
     pub approved_time: Option<DateTime<Utc>>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Allergy {
     pub allergy_id: Uuid,
     pub user_id: Uuid,
@@ -66,8 +66,6 @@ pub struct Consultation {
     pub consultation_id: Uuid,
     pub doctor_id: Uuid,
     pub record_id: Uuid,
-    pub diagnoses: Vec<Diagnosis>,
-    pub symptoms: Vec<Symptom>,
 }
 
 #[derive(Serialize)]
