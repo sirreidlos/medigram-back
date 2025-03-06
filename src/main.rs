@@ -22,28 +22,35 @@
 //    - bisa tambah informasi kesehatan lain (berat badan, tinggi, alergi, dll)
 
 mod auth;
-pub mod canonical_json;
+mod canonical_json;
 mod jwt;
 mod model;
 mod protocol;
 mod route;
 mod schema;
 
-use crate::route::{handler, request_nonce};
+use crate::route::{
+    allergy::{add_allergy, get_allergies, remove_allergy},
+    consultation::{add_consultation, get_consultations},
+    doctor_profile::{get_doctor_profile, set_doctor_profile},
+    purchase::{add_purchase, get_purchases},
+    request_nonce,
+    user::get_user,
+    user_detail::{get_user_detail, set_user_detail},
+    user_measurement::{add_user_measurement, get_user_measurements},
+};
+
 use auth::auth_middleware;
 use axum::{
     Json,
+    extract::FromRef,
     http::StatusCode,
     response::IntoResponse,
     routing::{delete, get, post, put},
 };
 use jwt::AuthError;
 use protocol::{ConsentError, Nik, Nonce};
-use route::{
-    add_allergy, add_consultation, consent_required_example, get_allergies,
-    get_consultations, get_doctor_profile, get_records, get_user,
-    get_user_detail, remove_allergy, set_doctor_profile, set_user_detail,
-};
+use route::handler;
 use serde::Serialize;
 use serde_json::Value;
 use std::{collections::HashSet, time::Duration};
@@ -59,7 +66,10 @@ use tracing_subscriber::{
     EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt,
 };
 
-enum AppError {
+// 7d
+const NONCE_TTL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
+
+pub enum AppError {
     InternalError,
     InvalidNik,
     RowNotFound,
@@ -122,13 +132,21 @@ struct AppState {
     recognized_session_id: Cache<String, Uuid>,
 }
 
-impl AppState {
-    fn add_nonce(&self, nonce: Nonce) {
-        self.nonce_cache.insert(nonce, ());
+impl FromRef<AppState> for Cache<String, Uuid> {
+    fn from_ref(input: &AppState) -> Self {
+        input.recognized_session_id.clone()
     }
+}
 
-    fn remove_nonce(&self, nonce: Nonce) {
-        self.nonce_cache.invalidate(&nonce);
+impl FromRef<AppState> for Pool<Postgres> {
+    fn from_ref(input: &AppState) -> Self {
+        input.db_pool.clone()
+    }
+}
+
+impl FromRef<AppState> for Cache<Nonce, ()> {
+    fn from_ref(input: &AppState) -> Self {
+        input.nonce_cache.clone()
     }
 }
 
@@ -175,14 +193,13 @@ async fn main() {
         .route("/allergy", get(get_allergies))
         .route("/allergy", post(add_allergy))
         .route("/allergy", delete(remove_allergy))
-        .route("/record", get(get_records))
         .route("/consultation", get(get_consultations))
         .route("/consultation", post(add_consultation))
-        .route("/", get(handler))
-        .layer(axum::middleware::from_fn_with_state(
-            state.clone(),
-            auth_middleware,
-        ))
+        // .route("/", get(handler))
+        // .layer(axum::middleware::from_fn_with_state(
+        //     state.clone(),
+        //     auth_middleware,
+        // ))
         .route("/request-nonce", get(request_nonce))
         .route("/login", post(auth::login))
         .route("/register", post(auth::register))

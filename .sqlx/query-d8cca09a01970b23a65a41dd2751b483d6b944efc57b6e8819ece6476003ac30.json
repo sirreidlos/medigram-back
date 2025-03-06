@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO prescriptions (consultation_id, drug_name, doses_in_mg, regimen_per_day, quantity_per_dose, instruction) VALUES ($1, $2, $3, $4, $5, $6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d8cca09a01970b23a65a41dd2751b483d6b944efc57b6e8819ece6476003ac30"
+}

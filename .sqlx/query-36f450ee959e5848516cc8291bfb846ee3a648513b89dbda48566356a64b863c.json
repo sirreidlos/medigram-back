@@ -1,16 +1,21 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM records WHERE user_id = $1",
+  "query": "SELECT * FROM consultations WHERE user_id = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "record_id",
+        "name": "consultation_id",
         "type_info": "Uuid"
       },
       {
         "ordinal": 1,
         "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "doctor_id",
         "type_info": "Uuid"
       }
     ],
@@ -21,8 +26,9 @@
     },
     "nullable": [
       false,
+      false,
       false
     ]
   },
-  "hash": "21bd1ad0d2f67b994bae015d83a63ae0543a1b807bd377ddba9662423b397225"
+  "hash": "36f450ee959e5848516cc8291bfb846ee3a648513b89dbda48566356a64b863c"
 }

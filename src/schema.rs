@@ -24,18 +24,25 @@ pub struct UserDetail {
     pub name: String,
     pub dob: NaiveDate,
     pub gender: char,
+}
+
+#[derive(Serialize)]
+pub struct UserMeasurement {
+    pub measurement_id: Uuid,
+    pub user_id: Uuid,
     pub height_in_cm: f32,
     pub weight_in_kg: f32,
+    pub measured_at: DateTime<Utc>,
 }
 
 #[derive(Serialize)]
 pub struct DoctorProfile {
-    pub doctor_profile_id: Uuid,
+    pub doctor_id: Uuid,
     pub user_id: Uuid,
     pub practice_permit: String,
     pub practice_address: String,
     pub approved: bool,
-    pub approved_time: Option<DateTime<Utc>>,
+    pub approved_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -43,6 +50,7 @@ pub struct Allergy {
     pub allergy_id: Uuid,
     pub user_id: Uuid,
     pub allergy: String,
+    pub severity: i32,
 }
 
 // TODO map device_id to public_key in an lru cache
@@ -52,20 +60,37 @@ pub struct DeviceKey {
     pub device_id: Uuid,
     pub user_id: Uuid,
     pub public_key_pem: String,
-    pub revoked: bool,
+    pub revoked_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Serialize)]
-pub struct Record {
-    pub record_id: Uuid,
+pub struct Medicine {
+    pub medicine_id: Uuid,
+    pub name: String,
+    pub dosage_form: String,
+    pub composition_notes: String,
+}
+
+pub struct MedicineIngredient {
+    medicine_ingredient_id: Uuid,
+    medicine_id: Uuid,
+    ingredient: String,
+    dosage_in_mg: i32,
+}
+
+#[derive(Serialize)]
+pub struct Purchase {
+    pub purchase_id: Uuid,
     pub user_id: Uuid,
+    pub medicine_id: Uuid,
+    pub quantity: i32,
 }
 
 #[derive(Serialize)]
 pub struct Consultation {
     pub consultation_id: Uuid,
     pub doctor_id: Uuid,
-    pub record_id: Uuid,
+    pub user_id: Uuid,
 }
 
 #[derive(Serialize)]
@@ -73,6 +98,8 @@ pub struct Diagnosis {
     pub diagnosis_id: Uuid,
     pub consultation_id: Uuid,
     pub diagnosis: String,
+    pub icd_code: String,
+    pub severity: String,
 }
 
 #[derive(Serialize)]
@@ -88,7 +115,7 @@ pub struct Prescription {
     pub record_id: Uuid,
     pub drug_name: String,
     pub doses_in_mg: u64,
-    pub regiment_per_day: u8,
+    pub regimen_per_day: u8,
     pub quantity_per_dose: u8,
     pub instruction: String,
 }

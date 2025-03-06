@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM device_keys WHERE device_id = $1",
+  "query": "SELECT * FROM purchases WHERE user_id = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "device_id",
+        "name": "purchase_id",
         "type_info": "Uuid"
       },
       {
@@ -15,13 +15,13 @@
       },
       {
         "ordinal": 2,
-        "name": "public_key_pem",
-        "type_info": "Text"
+        "name": "medicine_id",
+        "type_info": "Uuid"
       },
       {
         "ordinal": 3,
-        "name": "revoked_at",
-        "type_info": "Timestamptz"
+        "name": "quantity",
+        "type_info": "Int4"
       }
     ],
     "parameters": {
@@ -33,8 +33,8 @@
       false,
       false,
       false,
-      true
+      false
     ]
   },
-  "hash": "a7d17e618f83120345c1bdca74e02d8531395bb85eb9044e444f0bfa2937fe68"
+  "hash": "268afd3ea39ceedc44404254ca321076fe86264c59177262dc4ead5a4d904e93"
 }

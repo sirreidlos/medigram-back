@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM doctor_profiles WHERE doctor_profile_id = $1",
+  "query": "SELECT * FROM user_measurements WHERE user_id = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "doctor_profile_id",
+        "name": "measurement_id",
         "type_info": "Uuid"
       },
       {
@@ -15,22 +15,17 @@
       },
       {
         "ordinal": 2,
-        "name": "practice_permit",
-        "type_info": "Text"
+        "name": "height_in_cm",
+        "type_info": "Float4"
       },
       {
         "ordinal": 3,
-        "name": "practice_address",
-        "type_info": "Text"
+        "name": "weight_in_kg",
+        "type_info": "Float4"
       },
       {
         "ordinal": 4,
-        "name": "approved",
-        "type_info": "Bool"
-      },
-      {
-        "ordinal": 5,
-        "name": "approved_time",
+        "name": "measured_at",
         "type_info": "Timestamptz"
       }
     ],
@@ -44,9 +39,8 @@
       false,
       false,
       false,
-      false,
-      true
+      false
     ]
   },
-  "hash": "079fa0dc433d7d7b977b46f94ebfb20ea5d4a256c70aef96aa2b8841fbdafdcc"
+  "hash": "754c068224becc57c9dba64d431faef07c5ff1670030e7ceeb052f169422bfb7"
 }

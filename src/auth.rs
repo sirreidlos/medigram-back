@@ -1,9 +1,18 @@
 use axum::{
-    Json, extract::State, handler::HandlerWithoutStateExt, http::StatusCode,
+    Json, RequestPartsExt,
+    extract::{FromRef, FromRequestParts, State},
+    handler::HandlerWithoutStateExt,
+    http::{StatusCode, request::Parts},
+};
+use axum_extra::{
+    TypedHeader,
+    headers::{self, authorization::Bearer},
+    typed_header::TypedHeaderRejectionReason,
 };
 use base64::Engine;
 use base64::engine::general_purpose;
 use ed25519_compact::{KeyPair, PublicKey, Seed};
+use moka::sync::Cache;
 use rand::{Rng, distr::Alphanumeric, rng};
 use serde_json::{Value, json};
 use sqlx::{Pool, Postgres};
@@ -30,6 +39,46 @@ pub const SESSION_ID_LEN: usize = 64;
 #[derive(Clone)]
 pub struct AuthUser {
     pub user_id: Uuid,
+}
+
+impl<S> FromRequestParts<S> for AuthUser
+where
+    S: Send + Sync,
+    Cache<String, Uuid>: FromRef<S>,
+{
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        let recognized_session_id = Cache::<String, Uuid>::from_ref(state);
+
+        // get session_id
+        let authorization_header = parts
+            .extract::<TypedHeader<headers::Authorization<Bearer>>>()
+            .await
+            .map_err(|e| match e.reason() {
+                TypedHeaderRejectionReason::Missing => {
+                    AuthError::MissingCredentials.into()
+                }
+                TypedHeaderRejectionReason::Error(error) => {
+                    error!("Error while extracting typed header: {:?}", error);
+                    AppError::InternalError
+                }
+                e => {
+                    error!("Unhandled error for typed header: {:?}", e);
+                    AppError::InternalError
+                }
+            })?;
+
+        let session_id = authorization_header.token();
+
+        match recognized_session_id.get(session_id) {
+            Some(user_id) => Ok(AuthUser { user_id }),
+            None => Err(AuthError::InvalidToken.into()),
+        }
+    }
 }
 
 /// Generates a [`SESSION_ID_LEN`] characters long string for `session_id`
@@ -101,12 +150,11 @@ async fn store_public_key(
     db_pool: &Pool<Postgres>,
 ) -> Result<(), AppError> {
     sqlx::query!(
-        "INSERT INTO device_keys (device_id, user_id, public_key_pem, \
-         revoked) VALUES ($1, $2, $3, $4)",
+        "INSERT INTO device_keys (device_id, user_id, public_key_pem) VALUES \
+         ($1, $2, $3)",
         device_id,
         user_id,
         public_key.to_pem(),
-        false
     )
     .execute(db_pool)
     .await

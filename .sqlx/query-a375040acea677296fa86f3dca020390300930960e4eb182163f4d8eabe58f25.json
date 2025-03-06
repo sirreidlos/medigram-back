@@ -1,17 +1,17 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO records (user_id) VALUES ($1) RETURNING record_id, user_id",
+  "query": "SELECT user_id, email FROM users WHERE user_id = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "record_id",
+        "name": "user_id",
         "type_info": "Uuid"
       },
       {
         "ordinal": 1,
-        "name": "user_id",
-        "type_info": "Uuid"
+        "name": "email",
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -24,5 +24,5 @@
       false
     ]
   },
-  "hash": "2b983abda22f838c33d98875bc784158bc23f57afa5c1d6f0579515ce61f0593"
+  "hash": "a375040acea677296fa86f3dca020390300930960e4eb182163f4d8eabe58f25"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM consultations WHERE record_id = $1",
+  "query": "INSERT INTO consultations (doctor_id, user_id) VALUES ($1, $2) RETURNING consultation_id, doctor_id, user_id",
   "describe": {
     "columns": [
       {
@@ -15,12 +15,13 @@
       },
       {
         "ordinal": 2,
-        "name": "record_id",
+        "name": "user_id",
         "type_info": "Uuid"
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -30,5 +31,5 @@
       false
     ]
   },
-  "hash": "cbac420e2beb9adf0f263bc590d0f2116f67ed119ac45d1d1ef4f8513cde45b3"
+  "hash": "b024175da71fa759e3af573f8ef35d5c1003cfded02122f8c5913c5ddb780f1e"
 }
