@@ -1,16 +1,19 @@
-use axum::{Extension, Json, extract::State, http::StatusCode};
+use axum::{Json, extract::State, http::StatusCode};
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tracing::error;
 
 use crate::{
-    APIResult, AppError, AppState, auth::AuthUser, schema::UserMeasurement,
+    AppState,
+    auth::AuthUser,
+    error::{APIResult, AppError},
+    schema::UserMeasurement,
 };
 
 pub async fn get_user_measurements(
     State(state): State<AppState>,
-    Extension(AuthUser { user_id }): Extension<AuthUser>,
+    AuthUser { user_id, .. }: AuthUser,
 ) -> APIResult<Json<Vec<UserMeasurement>>> {
     sqlx::query_as!(
         UserMeasurement,
@@ -38,7 +41,7 @@ pub struct UserMeasurementPayload {
 
 pub async fn add_user_measurement(
     State(state): State<AppState>,
-    Extension(AuthUser { user_id }): Extension<AuthUser>,
+    AuthUser { user_id, .. }: AuthUser,
     Json(UserMeasurementPayload {
         height_in_cm,
         weight_in_kg,

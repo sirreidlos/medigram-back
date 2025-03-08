@@ -23,6 +23,7 @@
 
 mod auth;
 mod canonical_json;
+mod error;
 mod jwt;
 mod model;
 mod protocol;
@@ -40,20 +41,12 @@ use crate::route::{
     user_measurement::{add_user_measurement, get_user_measurements},
 };
 
-use auth::auth_middleware;
 use axum::{
-    Json,
     extract::FromRef,
-    http::StatusCode,
-    response::IntoResponse,
     routing::{delete, get, post, put},
 };
-use jwt::AuthError;
-use protocol::{ConsentError, Nik, Nonce};
-use route::handler;
-use serde::Serialize;
-use serde_json::Value;
-use std::{collections::HashSet, time::Duration};
+use protocol::Nonce;
+use std::time::Duration;
 use tracing::info;
 use uuid::Uuid;
 
@@ -68,62 +61,6 @@ use tracing_subscriber::{
 
 // 7d
 const NONCE_TTL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
-
-pub enum AppError {
-    InternalError,
-    InvalidNik,
-    RowNotFound,
-    BadPayload,
-    Auth(AuthError),
-    Consent(ConsentError),
-}
-
-// actual decoration trait check
-// pls do the check manually ty
-pub type APIResult<T> = Result<T, AppError>;
-// pub type APIResultJson<T: Serialize> = APIResult<Json<T>>;
-// pub type APIResultCodeMessage = APIResult<(StatusCode, Json<Value>)>;
-
-impl IntoResponse for AppError {
-    fn into_response(self) -> axum::response::Response {
-        let (status, error_message) = match self {
-            AppError::InternalError => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "An internal error has occured",
-            ),
-            AppError::Auth(auth_error) => return auth_error.into_response(),
-            AppError::Consent(consent_error) => {
-                return consent_error.into_response();
-            }
-            AppError::InvalidNik => (StatusCode::BAD_REQUEST, "Invalid NIK"),
-            AppError::BadPayload => {
-                (StatusCode::BAD_REQUEST, "Bad Payload Data")
-            }
-            AppError::RowNotFound => (
-                StatusCode::NOT_FOUND,
-                "Resource does not exist in the database",
-            ),
-        };
-
-        let body = Json(serde_json::json!({
-            "error": error_message,
-        }));
-
-        (status, body).into_response()
-    }
-}
-
-impl From<AuthError> for AppError {
-    fn from(value: AuthError) -> Self {
-        Self::Auth(value)
-    }
-}
-
-impl From<ConsentError> for AppError {
-    fn from(value: ConsentError) -> Self {
-        Self::Consent(value)
-    }
-}
 
 #[derive(Clone)]
 struct AppState {
@@ -185,24 +122,24 @@ async fn main() {
         .allow_headers(Any);
 
     let app = Router::new()
-        .route("/user", get(get_user))
-        .route("/user-detail", get(get_user_detail))
-        .route("/user-detail", put(set_user_detail))
-        .route("/doctor-profile", get(get_doctor_profile))
-        .route("/doctor-profile", post(set_doctor_profile))
         .route("/allergy", get(get_allergies))
         .route("/allergy", post(add_allergy))
         .route("/allergy", delete(remove_allergy))
         .route("/consultation", get(get_consultations))
         .route("/consultation", post(add_consultation))
-        // .route("/", get(handler))
-        // .layer(axum::middleware::from_fn_with_state(
-        //     state.clone(),
-        //     auth_middleware,
-        // ))
-        .route("/request-nonce", get(request_nonce))
+        .route("/doctor-profile", get(get_doctor_profile))
+        .route("/doctor-profile", post(set_doctor_profile))
+        .route("/purchase", get(get_purchases))
+        .route("/purchase", post(add_purchase))
+        .route("/user", get(get_user))
+        .route("/user-detail", get(get_user_detail))
+        .route("/user-detail", put(set_user_detail))
+        .route("/user-measurement", get(get_user_measurements))
+        .route("/user-measurement", post(add_user_measurement))
         .route("/login", post(auth::login))
         .route("/register", post(auth::register))
+        .route("/logout", post(auth::logout))
+        .route("/request-nonce", get(request_nonce))
         .layer(cors)
         .with_state(state);
 

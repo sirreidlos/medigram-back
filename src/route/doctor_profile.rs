@@ -2,11 +2,14 @@ use axum::{Extension, Json, extract::State, http::StatusCode};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::{Pool, Postgres, query, query_as};
-use tracing::error;
+use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::{
-    APIResult, AppError, AppState, auth::AuthUser, schema::DoctorProfile,
+    AppState,
+    auth::AuthUser,
+    error::{APIResult, AppError},
+    schema::DoctorProfile,
 };
 
 #[derive(Deserialize)]
@@ -22,7 +25,7 @@ pub struct DoctorId {
 
 pub async fn get_doctor_profile(
     State(state): State<AppState>,
-    AuthUser { user_id }: AuthUser,
+    AuthUser { .. }: AuthUser,
     Json(DoctorId { doctor_id }): Json<DoctorId>,
 ) -> APIResult<Json<DoctorProfile>> {
     query_as!(
@@ -33,18 +36,24 @@ pub async fn get_doctor_profile(
     .fetch_one(&state.db_pool)
     .await
     .map(Json)
-    .map_err(|e| {
-        error!(
-            "Error while fetching doctor_profile for {}: {:?}",
-            doctor_id, e
-        );
-        AppError::InternalError
+    .map_err(|e| match e {
+        sqlx::Error::RowNotFound => {
+            info!("doctor profile for {doctor_id} does not exist");
+            AppError::RowNotFound
+        }
+        e => {
+            error!(
+                "Error while fetching doctor_profile for {}: {:?}",
+                doctor_id, e
+            );
+            AppError::InternalError
+        }
     })
 }
 
 pub async fn set_doctor_profile(
     State(state): State<AppState>,
-    AuthUser { user_id }: AuthUser,
+    AuthUser { user_id, .. }: AuthUser,
     Json(DoctorProfilePayload {
         practice_permit,
         practice_address,
@@ -62,10 +71,21 @@ pub async fn set_doctor_profile(
     .await
     .map_err(|e| {
         error!(
-            "Error while inserting doctor_profile for {}: {:?}",
+            "Error while inserting doctor_profile for {}:
+             {:?}",
             user_id, e
         );
-        AppError::InternalError
+
+        match e {
+            sqlx::Error::Database(db_e) => {
+                if db_e.is_foreign_key_violation() {
+                    todo!()
+                } else {
+                    AppError::InternalError
+                }
+            }
+            _ => AppError::InternalError,
+        }
     })?;
 
     Ok((

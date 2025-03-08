@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE users (
     user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL
 );
 
@@ -29,15 +29,17 @@ CREATE TABLE doctor_profiles (
     user_id UUID REFERENCES users(user_id) NOT NULL,
     practice_permit TEXT NOT NULL,
     practice_address TEXT NOT NULL, -- Maybe separate the address into smaller units?
-    approved BOOLEAN NOT NULL,
+    approved BOOLEAN NOT NULL, -- maybe just have approved_at as a signal that its done?
     approved_at TIMESTAMPTZ
 );
+
+CREATE TYPE allergy_severity AS ENUM ('MILD', 'MODERATE', 'SEVERE', 'ANAPHYLACTIC_SHOCK');
 
 CREATE TABLE allergies (
     allergy_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(user_id) NOT NULL,
-    allergy TEXT NOT NULL,
-    severity INT NOT NULL
+    allergen TEXT NOT NULL,
+    severity allergy_severity NOT NULL
 );
 
 CREATE TABLE device_keys (

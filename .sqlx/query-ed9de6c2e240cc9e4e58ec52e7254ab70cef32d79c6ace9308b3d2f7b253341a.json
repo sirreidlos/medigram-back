@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT allergy_id, user_id, allergen, severity AS \"severity: AllergySeverity\" FROM allergies WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "allergy_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "allergen",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "severity: AllergySeverity",
+        "type_info": {
+          "Custom": {
+            "name": "allergy_severity",
+            "kind": {
+              "Enum": [
+                "MILD",
+                "MODERATE",
+                "SEVERE",
+                "ANAPHYLACTIC_SHOCK"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ed9de6c2e240cc9e4e58ec52e7254ab70cef32d79c6ace9308b3d2f7b253341a"
+}

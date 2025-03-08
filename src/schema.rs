@@ -6,7 +6,6 @@
 
 use crate::protocol::Nik;
 use chrono::{DateTime, NaiveDate, Utc};
-use ed25519_compact::PublicKey;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -45,12 +44,22 @@ pub struct DoctorProfile {
     pub approved_at: Option<DateTime<Utc>>,
 }
 
+#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "allergy_severity", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum AllergySeverity {
+    Mild,
+    Moderate,
+    Severe,
+    AnaphylacticShock,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Allergy {
     pub allergy_id: Uuid,
     pub user_id: Uuid,
-    pub allergy: String,
-    pub severity: i32,
+    pub allergen: String,
+    pub severity: AllergySeverity,
 }
 
 // TODO map device_id to public_key in an lru cache

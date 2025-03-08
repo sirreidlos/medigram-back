@@ -1,9 +1,8 @@
 use axum::{
-    Json, Router,
-    extract::{FromRequestParts, State},
-    http::{StatusCode, header::AUTHORIZATION, request::Parts},
+    Json,
+    extract::State,
+    http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{get, post},
 };
 use chrono::{Duration, Utc};
 use jsonwebtoken::{
@@ -11,15 +10,10 @@ use jsonwebtoken::{
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashSet,
-    net::SocketAddr,
-    sync::{Arc, Mutex},
-};
 // use tower_http::{cors::{Any, CorsLayer}, limit::RequestBodyLimitLayer};
 use uuid::Uuid;
 
-use crate::{AppError, AppState};
+use crate::{AppState, error::AppError};
 
 // Login request payload
 #[derive(Debug, Deserialize)]
@@ -38,9 +32,9 @@ pub struct RegisterRequest {
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
     pub access_token: String,
+    pub expires_in: i64,
     pub session_id: String,
     pub token_type: String,
-    pub expires_in: i64,
     pub device_id: Uuid,
     // base 64
     pub private_key: String,
@@ -94,6 +88,7 @@ pub enum AuthError {
     TokenCreation,
     TokenBlacklisted,
     UserNotFound,
+    EmailUsed,
 }
 
 impl IntoResponse for AuthError {
@@ -119,6 +114,9 @@ impl IntoResponse for AuthError {
             }
             AuthError::UserNotFound => {
                 (StatusCode::NOT_FOUND, "User not found")
+            }
+            AuthError::EmailUsed => {
+                (StatusCode::CONFLICT, "Email has been registered previously")
             }
         };
 

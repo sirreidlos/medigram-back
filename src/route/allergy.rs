@@ -1,23 +1,36 @@
-use axum::{Extension, Json, extract::State, http::StatusCode};
+use axum::{Json, extract::State, http::StatusCode};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::{query, query_as};
 use tracing::error;
+use uuid::Uuid;
 
-use crate::{APIResult, AppError, AppState, auth::AuthUser, schema::Allergy};
+use crate::{
+    AppState,
+    auth::AuthUser,
+    error::{APIResult, AppError},
+    schema::{Allergy, AllergySeverity},
+};
 
 #[derive(Deserialize)]
 pub struct AllergyPayload {
-    pub allergy: String,
+    pub allergen: String,
+    pub severity: AllergySeverity,
+}
+
+#[derive(Deserialize)]
+pub struct AllergyIDPayload {
+    pub allergy_id: Uuid,
 }
 
 pub async fn get_allergies(
     State(state): State<AppState>,
-    AuthUser { user_id }: AuthUser,
+    AuthUser { user_id, .. }: AuthUser,
 ) -> APIResult<Json<Vec<Allergy>>> {
     query_as!(
         Allergy,
-        "SELECT * FROM allergies WHERE user_id = $1",
+        "SELECT allergy_id, user_id, allergen, severity AS \"severity: \
+         AllergySeverity\" FROM allergies WHERE user_id = $1",
         user_id
     )
     .fetch_all(&state.db_pool)
@@ -31,13 +44,15 @@ pub async fn get_allergies(
 
 pub async fn add_allergy(
     State(state): State<AppState>,
-    AuthUser { user_id }: AuthUser,
-    Json(AllergyPayload { allergy }): Json<AllergyPayload>,
+    AuthUser { user_id, .. }: AuthUser,
+    Json(AllergyPayload { allergen, severity }): Json<AllergyPayload>,
 ) -> APIResult<(StatusCode, Json<Value>)> {
     let _ = query!(
-        "INSERT INTO allergies (user_id, allergy) VALUES ($1, $2)",
+        "INSERT INTO allergies (user_id, allergen, severity) VALUES ($1, $2, \
+         $3)",
         user_id,
-        allergy
+        allergen,
+        severity as AllergySeverity
     )
     .execute(&state.db_pool)
     .await
@@ -55,8 +70,8 @@ pub async fn add_allergy(
 
 pub async fn remove_allergy(
     State(state): State<AppState>,
-    AuthUser { user_id }: AuthUser,
-    Json(Allergy { allergy_id, .. }): Json<Allergy>,
+    AuthUser { user_id, .. }: AuthUser,
+    Json(AllergyIDPayload { allergy_id }): Json<AllergyIDPayload>,
 ) -> APIResult<(StatusCode, Json<Value>)> {
     let query_res: sqlx::postgres::PgQueryResult =
         query!("DELETE FROM allergies WHERE allergy_id = $1", allergy_id)

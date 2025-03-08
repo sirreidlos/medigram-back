@@ -6,7 +6,7 @@ pub mod user;
 pub mod user_detail;
 pub mod user_measurement;
 
-use axum::{Extension, Json, extract::State, http::StatusCode, response::Html};
+use axum::{Json, extract::State, http::StatusCode, response::Html};
 use chrono::{DateTime, Utc};
 use ed25519_compact::PublicKey;
 use moka::sync::Cache;
@@ -16,9 +16,10 @@ use tracing::{error, trace};
 use uuid::Uuid;
 
 use crate::{
-    AppError, AppState, NONCE_TTL,
+    AppState, NONCE_TTL,
     auth::{AuthUser, retrieve_public_key},
     canonical_json::CanonicalJson,
+    error::AppError,
     model::ExampleConsentRequired,
     protocol::{Consent, ConsentError, Nonce},
     schema::DeviceKey,

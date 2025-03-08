@@ -1,4 +1,4 @@
-use axum::{Extension, Json, extract::State, http::StatusCode};
+use axum::{Json, extract::State, http::StatusCode};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::{Postgres, Transaction, query, query_as};
@@ -6,13 +6,17 @@ use tracing::error;
 use uuid::Uuid;
 
 use crate::{
-    APIResult, AppError, AppState, auth::AuthUser, protocol::Consent,
-    route::verify_consent, schema::Consultation,
+    AppState,
+    auth::AuthUser,
+    error::{APIResult, AppError},
+    protocol::{Consent, ConsentError},
+    route::verify_consent,
+    schema::{Consultation, DoctorProfile},
 };
 
 pub async fn get_consultations(
     State(state): State<AppState>,
-    AuthUser { user_id }: AuthUser,
+    AuthUser { user_id, .. }: AuthUser,
 ) -> APIResult<Json<Vec<Consultation>>> {
     query_as!(
         Consultation,
@@ -58,7 +62,10 @@ pub struct ConsultationPayload {
 
 pub async fn add_consultation(
     State(state): State<AppState>,
-    AuthUser { user_id: doctor_id }: AuthUser,
+    AuthUser {
+        user_id: doctor_user_id,
+        ..
+    }: AuthUser,
     Json(ConsultationPayload {
         consent,
         user_id,
@@ -69,6 +76,28 @@ pub async fn add_consultation(
 ) -> APIResult<(StatusCode, Json<Value>)> {
     verify_consent(consent, user_id, &state.db_pool, &state.nonce_cache)
         .await?;
+
+    let doctor_profile = query_as!(
+        DoctorProfile,
+        "SELECT * FROM doctor_profiles WHERE user_id = $1",
+        doctor_user_id
+    )
+    .fetch_one(&state.db_pool)
+    .await
+    .map_err(|e| {
+        error!("Error occured while fetching for doctor profile: {:?}", e);
+
+        match e {
+            sqlx::Error::RowNotFound => ConsentError::NotLicensed.into(),
+            _ => AppError::InternalError,
+        }
+    })?;
+
+    if doctor_profile.approved_at.is_none() {
+        return Err(ConsentError::NotLicensed.into());
+    }
+
+    let doctor_id = doctor_profile.doctor_id;
 
     let mut tx: Transaction<Postgres> =
         state.db_pool.begin().await.map_err(|e| {

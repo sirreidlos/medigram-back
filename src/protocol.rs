@@ -1,11 +1,7 @@
 use axum::Json;
-use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use num_traits::ToPrimitive;
-use std::fmt::Display;
-use tracing::error;
 
 use base64::Engine;
 use ed25519_compact::{PublicKey, Signature};
@@ -13,9 +9,6 @@ use serde::de::Error;
 use serde::{Deserialize, Serialize};
 use serde_json_canonicalizer::to_string;
 use uuid::Uuid;
-
-use crate::auth::retrieve_public_key;
-use crate::{AppError, AppState};
 
 /// Since NIK only consists of 16 digits, should it be higher than this number
 /// (10^17-1), it means that it's an invalid NIK.
@@ -102,6 +95,7 @@ pub enum ConsentError {
     DeviceNotFound,
     UserDeviceMismatch,
     KeyExpired,
+    NotLicensed,
 }
 
 impl IntoResponse for ConsentError {
@@ -121,6 +115,9 @@ impl IntoResponse for ConsentError {
             }
             ConsentError::KeyExpired => {
                 (StatusCode::GONE, "Consesnt has expired")
+            }
+            ConsentError::NotLicensed => {
+                (StatusCode::FORBIDDEN, "You are not a licensed practitioner")
             }
         };
 

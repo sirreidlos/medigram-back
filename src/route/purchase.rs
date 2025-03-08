@@ -1,4 +1,4 @@
-use axum::{Extension, Json, extract::State, http::StatusCode};
+use axum::{Json, extract::State, http::StatusCode};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::{query, query_as};
@@ -6,14 +6,15 @@ use tracing::error;
 use uuid::Uuid;
 
 use crate::{
-    APIResult, AppError, AppState,
+    AppState,
     auth::AuthUser,
-    schema::{Allergy, Purchase},
+    error::{APIResult, AppError},
+    schema::Purchase,
 };
 
 pub async fn get_purchases(
     State(state): State<AppState>,
-    Extension(AuthUser { user_id }): Extension<AuthUser>,
+    AuthUser { user_id, .. }: AuthUser,
 ) -> APIResult<Json<Vec<Purchase>>> {
     query_as!(
         Purchase,
@@ -30,14 +31,14 @@ pub async fn get_purchases(
 }
 
 #[derive(Deserialize)]
-struct PurchasePayload {
+pub struct PurchasePayload {
     medicine_id: Uuid,
     quantity: i32,
 }
 
 pub async fn add_purchase(
     State(state): State<AppState>,
-    Extension(AuthUser { user_id }): Extension<AuthUser>,
+    AuthUser { user_id, .. }: AuthUser,
     Json(PurchasePayload {
         medicine_id,
         quantity,

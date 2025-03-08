@@ -1,7 +1,10 @@
+use argon2::{
+    Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
+    password_hash::{SaltString, rand_core::OsRng},
+};
 use axum::{
     Json, RequestPartsExt,
     extract::{FromRef, FromRequestParts, State},
-    handler::HandlerWithoutStateExt,
     http::{StatusCode, request::Parts},
 };
 use axum_extra::{
@@ -14,21 +17,18 @@ use base64::engine::general_purpose;
 use ed25519_compact::{KeyPair, PublicKey, Seed};
 use moka::sync::Cache;
 use rand::{Rng, distr::Alphanumeric, rng};
+use serde::Deserialize;
 use serde_json::{Value, json};
-use sqlx::{Pool, Postgres};
+use sqlx::{Pool, Postgres, query};
 use tracing::{debug, error, info};
-// use tower_http::{cors::{Any, CorsLayer}, limit::RequestBodyLimitLayer};
-use argon2::{
-    Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
-    password_hash::{SaltString, rand_core::OsRng},
-};
 use uuid::Uuid;
 
 use crate::{
-    AppError, AppState,
+    AppState,
+    error::AppError,
     jwt::{
-        AuthError, AuthResponse, LoginRequest, RefreshRequest, RegisterRequest,
-        create_access_token, get_session_id, get_token, verify_token,
+        AuthError, AuthResponse, LoginRequest, RegisterRequest,
+        create_access_token, get_session_id,
     },
     schema::{DeviceKey, User},
 };
@@ -39,6 +39,7 @@ pub const SESSION_ID_LEN: usize = 64;
 #[derive(Clone)]
 pub struct AuthUser {
     pub user_id: Uuid,
+    pub session_id: String,
 }
 
 impl<S> FromRequestParts<S> for AuthUser
@@ -58,24 +59,27 @@ where
         let authorization_header = parts
             .extract::<TypedHeader<headers::Authorization<Bearer>>>()
             .await
-            .map_err(|e| match e.reason() {
-                TypedHeaderRejectionReason::Missing => {
-                    AuthError::MissingCredentials.into()
-                }
-                TypedHeaderRejectionReason::Error(error) => {
-                    error!("Error while extracting typed header: {:?}", error);
-                    AppError::InternalError
-                }
-                e => {
-                    error!("Unhandled error for typed header: {:?}", e);
-                    AppError::InternalError
+            .map_err(|e| {
+                error!("Error while extracting authorization header: {:?}", e);
+
+                match e.reason() {
+                    TypedHeaderRejectionReason::Missing => {
+                        AuthError::MissingCredentials.into()
+                    }
+                    TypedHeaderRejectionReason::Error(_) => {
+                        AppError::InternalError
+                    }
+                    _ => AppError::InternalError,
                 }
             })?;
 
         let session_id = authorization_header.token();
 
         match recognized_session_id.get(session_id) {
-            Some(user_id) => Ok(AuthUser { user_id }),
+            Some(user_id) => Ok(AuthUser {
+                user_id,
+                session_id: session_id.to_string(),
+            }),
             None => Err(AuthError::InvalidToken.into()),
         }
     }
@@ -115,8 +119,18 @@ pub async fn register(
     .execute(&state.db_pool)
     .await
     .map_err(|e| {
-        error!("registering email: {:?}", e);
-        AppError::InternalError
+        error!("error occured while registering email: {:?}", e);
+
+        match e {
+            sqlx::Error::Database(db_e) => {
+                if db_e.is_unique_violation() {
+                    AuthError::EmailUsed.into()
+                } else {
+                    AppError::InternalError
+                }
+            }
+            _ => AppError::InternalError,
+        }
     })?;
 
     info!("Successfully registered email: {}", email);
@@ -240,12 +254,30 @@ pub async fn login(
     }))
 }
 
-async fn logout(
+#[derive(Deserialize)]
+pub struct DeviceIDPayload {
+    device_id: Uuid,
+}
+
+pub async fn logout(
     State(state): State<AppState>,
-    Json(payload): Json<RefreshRequest>,
+    AuthUser { session_id, .. }: AuthUser,
+    Json(DeviceIDPayload { device_id }): Json<DeviceIDPayload>,
 ) -> Result<(StatusCode, Json<Value>), AppError> {
     // remove the refresh token from the whitelist
-    state.recognized_session_id.remove(&payload.refresh_token);
+    state.recognized_session_id.remove(&session_id);
+    query!(
+        "UPDATE device_keys SET revoked_at = $1 WHERE device_id = $2",
+        chrono::Utc::now(),
+        device_id
+    )
+    .execute(&state.db_pool)
+    .await
+    .map_err(|e| {
+        error!("error while revoking device {}: {:?}", device_id, e);
+        AppError::InternalError
+    })?;
+
     Ok((StatusCode::OK, Json(json!({ "message": "logged out" }))))
 }
 
@@ -258,7 +290,10 @@ pub async fn auth_middleware(
     match get_session_id(&headers) {
         Some(session_id) => {
             if let Some(user_id) = state.recognized_session_id.get(session_id) {
-                let data = AuthUser { user_id };
+                let data = AuthUser {
+                    user_id,
+                    session_id: todo!(),
+                };
                 request.extensions_mut().insert(data);
                 let response = next.run(request).await;
 

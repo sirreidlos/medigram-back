@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO allergies (user_id, allergen, severity) VALUES ($1, $2, $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        {
+          "Custom": {
+            "name": "allergy_severity",
+            "kind": {
+              "Enum": [
+                "MILD",
+                "MODERATE",
+                "SEVERE",
+                "ANAPHYLACTIC_SHOCK"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5a992b82a498ed3bc6d491aa9f68fdc0990152ceda62f636a8dd77cd2cff51f5"
+}

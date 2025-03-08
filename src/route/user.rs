@@ -1,10 +1,14 @@
-use axum::{Extension, Json, extract::State};
+use axum::{Json, extract::State};
 use serde::Serialize;
 use sqlx::query_as;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{APIResult, AppError, AppState, auth::AuthUser};
+use crate::{
+    AppState,
+    auth::AuthUser,
+    error::{APIResult, AppError},
+};
 
 #[derive(Serialize)]
 pub struct UserOpaque {
@@ -14,8 +18,7 @@ pub struct UserOpaque {
 
 pub async fn get_user(
     State(state): State<AppState>,
-    // Extension(AuthUser { user_id }): Extension<AuthUser>,
-    AuthUser { user_id }: AuthUser,
+    AuthUser { user_id, .. }: AuthUser,
 ) -> APIResult<Json<UserOpaque>> {
     query_as!(
         UserOpaque,
