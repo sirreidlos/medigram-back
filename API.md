@@ -3,7 +3,8 @@
 # Medigram API Documentation
 
 ## Preface
-Routes with authorization middleware layered on top will be marked with 🔒. Routes that require the user to be a verified will be marked with ⚕️. 
+Routes with authorization middleware layered on top will be marked with 🔒. 
+Routes that allows the user of a verified practitioner to access will be marked with ⚕️ (assuming they are connected). 
 
 Please add `Authorization: Bearer <SESSION_ID>` to the request's header.
 
@@ -65,7 +66,15 @@ TODO: detail the purpose of `access-token`.
 ```
 
 ## `POST /logout` 🔒
-TODO
+### Request
+```json
+{"device_id": "0b3158b5-0b08-4095-9773-c4618e63abbf"}
+```
+### Response
+`200 OK`
+```json
+{"message":"logged out"}
+```
 
 # User Information
 
@@ -174,7 +183,7 @@ This scenario may happen when the user has just registered their email but hasn'
 {"error":"Row does not exist in the database"}
 ```
 
-## `POST /user-measurement`
+## `POST /user-measurement` 🔒
 ### Request
 ```json
 {
@@ -197,12 +206,7 @@ This scenario may happen when the user has just registered their email but hasn'
 {"message":"Successfully added user measurement"}
 ```
 
-## `GET /user-measurement`
-### Response (empty)
-`200 OK`
-```json
-[]
-```
+## `GET /user-measurement` 🔒
 
 ### Response
 ```json
@@ -223,3 +227,182 @@ This scenario may happen when the user has just registered their email but hasn'
   }
 ]
 ```
+
+### Response (empty)
+`200 OK`
+```json
+[]
+```
+
+# Doctor
+## `GET /doctor-profile` 🔒
+### Request
+```json
+{
+  "doctor_id": "23b41c6a-88a9-465f-abf6-4b2b318f1a0c"
+}
+```
+
+### Response
+`200 OK`
+```json
+{
+  "doctor_id":"23b41c6a-88a9-465f-abf6-4b2b318f1a0c",
+  "user_id":"47945790-d358-42e2-aa88-c43f4cb28985",
+  "practice_permit":"XXXXXXXXX-XXXXXXX",
+  "practice_address":"Jalan Mawar No. 45, Kelurahan Sukamaju, Kecamatan Mentari, Jakarta 10110, Indonesia",
+  "approved":true,
+  "approved_at":"2025-03-09T03:00:09Z"
+}
+```
+
+### Response (not found)
+`404 Not Found`
+```json
+{"error":"Row does not exist in the database"}
+```
+
+# Consultation
+## `POST /consultation` 🔒 (ONLY ⚕️)
+Before requesting, do remember to request for a nonce through `GET /request-nonce`. After that, serialize the `device_id` and the `nonce` with a canonical JSON format, something like:
+```json
+"[\"862f034f-c705-48ff-bd0e-3a239c6c575e\",[59,227,41,67,102,181,171,84,15,176,74,12,137,163,111,222]]"
+```
+Afterwards, the patient signs it with their private key corresponding to the `device_id`.
+
+### Request
+```json
+{
+  "consent": {
+    "signer_device_id": "862f034f-c705-48ff-bd0e-3a239c6c575e",
+    "nonce": [59, 227, 41, 67, 102, 181, 171, 84, 15, 176, 74, 12, 137, 163, 111, 222],
+    "signature": "lzfJ8534rZ2f4m0CMdxE5T0emdiV3AERgxYk1q7NGUz+leM/7rgzCyVXCjjXBc8cX4P236h1bjEJ0w7oHVPzCg=="
+  },
+  "user_id": "41676bb2-8561-47fe-9271-4c7e89defa7c",
+  "diagnoses": [
+    {
+      "diagnosis": "Common Cold",
+      "icd_code": "J00",
+      "severity": "MILD"
+    }
+  ],
+  "symptoms": ["runny nose", "coughing"],
+  "prescriptions": [
+    {
+      "drug_name": "Paracetamol",
+      "doses_in_mg": 500,
+      "regimen_per_day": 3,
+      "quantity_per_dose": 1,
+      "instruction": "Take after meals with a full glass of water."
+    }
+  ]
+}
+
+```
+
+### Response
+`201 Created`
+```json
+{"message":"consultation record added"}
+```
+
+## `GET /consultation` 🔒⚕️
+
+### Response
+`200 OK`
+```json
+[
+  {
+    "consultation_id":"51df7e84-7d5a-492f-9eb3-ace107ca66ec",
+    "doctor_id":"23b41c6a-88a9-465f-abf6-4b2b318f1a0c",
+    "user_id":"41676bb2-8561-47fe-9271-4c7e89defa7c"
+  }
+]
+```
+
+### Response (empty)
+`200 OK`
+```json
+[]
+```
+
+## `GET /diagnosis` 🔒⚕️
+
+### Request
+```json
+{
+  "consultation_id": "51df7e84-7d5a-492f-9eb3-ace107ca66ec"
+}
+```
+
+### Response
+`200 OK`
+```json
+[
+  {
+    "diagnosis_id":"f9077ba9-b329-4dbd-926e-4f574ccaf9f5",
+    "consultation_id":"51df7e84-7d5a-492f-9eb3-ace107ca66ec",
+    "diagnosis":"Common Cold",
+    "icd_code":"J00",
+    "severity":"MILD"
+  }
+]
+```
+
+### Response (different user)
+`403 Forbidden`
+```json
+{"error":"You are not allowed to request for this"}
+```
+
+## `GET /symptom` 🔒⚕️
+
+### Request
+```json
+{
+  "consultation_id": "51df7e84-7d5a-492f-9eb3-ace107ca66ec"
+}
+```
+
+### Response
+`200 OK`
+```json
+[
+  {
+    "symptom_id":"b5a5840d-7168-4471-8fef-121859d472d1",
+    "consultation_id":"51df7e84-7d5a-492f-9eb3-ace107ca66ec",
+    "symptom":"runny nose"
+  },
+  {
+    "symptom_id":"20337e92-f192-4ad0-8a78-391bc1e74d65",
+    "consultation_id":"51df7e84-7d5a-492f-9eb3-ace107ca66ec",
+    "symptom":"coughing"
+  }
+]
+```
+
+## `GET /prescription` 🔒⚕️
+
+### Request
+```json
+{
+  "consultation_id": "51df7e84-7d5a-492f-9eb3-ace107ca66ec"
+}
+```
+
+### Response
+`200 OK`
+```json
+[
+  {
+    "prescription_id":"e4b5ac40-d899-4f73-b52c-683b7a73639c",
+    "consultation_id":"51df7e84-7d5a-492f-9eb3-ace107ca66ec",
+    "drug_name":"Paracetamol",
+    "doses_in_mg":500,
+    "regimen_per_day":3,
+    "quantity_per_dose":1,
+    "instruction":"Take after meals with a full glass of water."
+  }
+]
+```
+
