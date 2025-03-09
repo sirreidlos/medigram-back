@@ -1,4 +1,8 @@
-use axum::{Extension, Json, extract::State, http::StatusCode};
+use axum::{
+    Extension, Json,
+    extract::{Path, State},
+    http::StatusCode,
+};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::{Pool, Postgres, query, query_as};
@@ -18,15 +22,10 @@ pub struct DoctorProfilePayload {
     pub practice_address: String,
 }
 
-#[derive(Deserialize)]
-pub struct DoctorId {
-    pub doctor_id: Uuid,
-}
-
 pub async fn get_doctor_profile(
     State(state): State<AppState>,
     AuthUser { .. }: AuthUser,
-    Json(DoctorId { doctor_id }): Json<DoctorId>,
+    Path(doctor_id): Path<Uuid>,
 ) -> APIResult<Json<DoctorProfile>> {
     query_as!(
         DoctorProfile,

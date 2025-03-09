@@ -235,12 +235,10 @@ This scenario may happen when the user has just registered their email but hasn'
 ```
 
 # Doctor
-## `GET /doctor-profile` 🔒
+## `GET /doctor-profile/{doctor_id}` 🔒
 ### Request
-```json
-{
-  "doctor_id": "23b41c6a-88a9-465f-abf6-4b2b318f1a0c"
-}
+```
+GET /doctor-profile/23b41c6a-88a9-465f-abf6-4b2b318f1a0c
 ```
 
 ### Response
@@ -326,13 +324,11 @@ Afterwards, the patient signs it with their private key corresponding to the `de
 []
 ```
 
-## `GET /diagnosis` 🔒⚕️
+## `GET /diagnosis/{consultation_id}` 🔒⚕️
 
 ### Request
-```json
-{
-  "consultation_id": "51df7e84-7d5a-492f-9eb3-ace107ca66ec"
-}
+```
+GET /diagnosis/51df7e84-7d5a-492f-9eb3-ace107ca66ec
 ```
 
 ### Response
@@ -355,13 +351,11 @@ Afterwards, the patient signs it with their private key corresponding to the `de
 {"error":"You are not allowed to request for this"}
 ```
 
-## `GET /symptom` 🔒⚕️
+## `GET /symptom/{consultation_id}` 🔒⚕️
 
 ### Request
-```json
-{
-  "consultation_id": "51df7e84-7d5a-492f-9eb3-ace107ca66ec"
-}
+```
+GET /symptom/51df7e84-7d5a-492f-9eb3-ace107ca66ec
 ```
 
 ### Response
@@ -381,13 +375,11 @@ Afterwards, the patient signs it with their private key corresponding to the `de
 ]
 ```
 
-## `GET /prescription` 🔒⚕️
+## `GET /prescription/{consultation_id}` 🔒⚕️
 
 ### Request
-```json
-{
-  "consultation_id": "51df7e84-7d5a-492f-9eb3-ace107ca66ec"
-}
+```
+GET /prescription/51df7e84-7d5a-492f-9eb3-ace107ca66ec
 ```
 
 ### Response
@@ -405,4 +397,3 @@ Afterwards, the patient signs it with their private key corresponding to the `de
   }
 ]
 ```
-

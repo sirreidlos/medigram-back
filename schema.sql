@@ -57,14 +57,6 @@ CREATE TABLE medicines (
     composition_notes TEXT
 );
 
-CREATE TABLE purchases (
-    purchase_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(user_id) NOT NULL,
-    medicine_id UUID REFERENCES medicines(medicine_id) NOT NULL,
-    quantity INT NOT NULL,
-    prescription_id UUID REFERENCES prescriptions(prescription_id)
-);
-
 CREATE TABLE medicine_ingredients (
     medicine_ingredient_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     medicine_id UUID REFERENCES medicines(medicine_id) NOT NULL,
@@ -100,4 +92,12 @@ CREATE TABLE prescriptions (
     regimen_per_day INT NOT NULL,
     quantity_per_dose INT NOT NULL,
     instruction TEXT NOT NULL
+);
+
+CREATE TABLE purchases (
+    purchase_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(user_id) NOT NULL,
+    medicine_id UUID REFERENCES medicines(medicine_id) NOT NULL,
+    quantity INT NOT NULL,
+    prescription_id UUID REFERENCES prescriptions(prescription_id)
 );

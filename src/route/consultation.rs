@@ -1,4 +1,8 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::{Pool, Postgres, Transaction, query, query_as};
@@ -175,11 +179,6 @@ pub async fn add_consultation(
     ))
 }
 
-#[derive(Deserialize)]
-pub struct ConsultationIDPayload {
-    pub consultation_id: Uuid,
-}
-
 pub async fn check_user(
     user_id: Uuid,
     doctor: Option<LicensedUser>,
@@ -220,9 +219,7 @@ pub async fn get_diagnoses(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
-    Json(ConsultationIDPayload { consultation_id }): Json<
-        ConsultationIDPayload,
-    >,
+    Path(consultation_id): Path<Uuid>,
 ) -> APIResult<Json<Vec<Diagnosis>>> {
     check_user(user_id, doctor, consultation_id, &state.db_pool).await?;
 
@@ -245,9 +242,7 @@ pub async fn get_symptoms(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
-    Json(ConsultationIDPayload { consultation_id }): Json<
-        ConsultationIDPayload,
-    >,
+    Path(consultation_id): Path<Uuid>,
 ) -> APIResult<Json<Vec<Symptom>>> {
     check_user(user_id, doctor, consultation_id, &state.db_pool).await?;
 
@@ -270,9 +265,7 @@ pub async fn get_prescriptions(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
-    Json(ConsultationIDPayload { consultation_id }): Json<
-        ConsultationIDPayload,
-    >,
+    Path(consultation_id): Path<Uuid>,
 ) -> APIResult<Json<Vec<Prescription>>> {
     check_user(user_id, doctor, consultation_id, &state.db_pool).await?;
 
