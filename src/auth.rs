@@ -4,7 +4,7 @@ use argon2::{
 };
 use axum::{
     Json, RequestPartsExt,
-    extract::{FromRef, FromRequestParts, State},
+    extract::{FromRef, FromRequestParts, OptionalFromRequestParts, State},
     http::{StatusCode, request::Parts},
 };
 use axum_extra::{
@@ -19,7 +19,7 @@ use moka::sync::Cache;
 use rand::{Rng, distr::Alphanumeric, rng};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use sqlx::{Pool, Postgres, query};
+use sqlx::{Pool, Postgres, query, query_as};
 use tracing::{debug, error, info};
 use uuid::Uuid;
 
@@ -30,7 +30,8 @@ use crate::{
         AuthError, AuthResponse, LoginRequest, RegisterRequest,
         create_access_token, get_session_id,
     },
-    schema::{DeviceKey, User},
+    protocol::ConsentError,
+    schema::{DeviceKey, DoctorProfile, User},
 };
 
 /// Session ID character length
@@ -82,6 +83,57 @@ where
             }),
             None => Err(AuthError::InvalidToken.into()),
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct LicensedUser {
+    pub doctor_id: Uuid,
+}
+
+impl<S> OptionalFromRequestParts<S> for LicensedUser
+where
+    S: Send + Sync,
+    Pool<Postgres>: FromRef<S>,
+    Cache<String, Uuid>: FromRef<S>,
+{
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> Result<Option<Self>, Self::Rejection> {
+        let db = Pool::<Postgres>::from_ref(state);
+
+        let auth = AuthUser::from_request_parts(parts, state).await?;
+        let doctor_user_id = auth.user_id;
+
+        let doctor_profile = match query_as!(
+            DoctorProfile,
+            "SELECT * FROM doctor_profiles WHERE user_id = $1",
+            doctor_user_id
+        )
+        .fetch_one(&db)
+        .await
+        {
+            Ok(profile) => profile,
+            Err(sqlx::Error::RowNotFound) => return Ok(None),
+            Err(e) => {
+                error!(
+                    "Error occured while fetching for doctor profile: {:?}",
+                    e
+                );
+                return Err(AppError::InternalError);
+            }
+        };
+
+        if doctor_profile.approved_at.is_none() {
+            return Ok(None);
+        }
+
+        let doctor_id = doctor_profile.doctor_id;
+
+        Ok(Some(LicensedUser { doctor_id }))
     }
 }
 

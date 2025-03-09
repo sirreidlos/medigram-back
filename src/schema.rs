@@ -93,6 +93,7 @@ pub struct Purchase {
     pub user_id: Uuid,
     pub medicine_id: Uuid,
     pub quantity: i32,
+    pub prescription_id: Option<Uuid>,
 }
 
 #[derive(Serialize)]
@@ -121,10 +122,10 @@ pub struct Symptom {
 #[derive(Serialize)]
 pub struct Prescription {
     pub prescription_id: Uuid,
-    pub record_id: Uuid,
+    pub consultation_id: Uuid,
     pub drug_name: String,
-    pub doses_in_mg: u64,
-    pub regimen_per_day: u8,
-    pub quantity_per_dose: u8,
+    pub doses_in_mg: i32,
+    pub regimen_per_day: i32,
+    pub quantity_per_dose: i32,
     pub instruction: String,
 }

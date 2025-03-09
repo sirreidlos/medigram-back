@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM symptoms WHERE consultation_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "symptom_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "consultation_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "symptom",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a41509b9b5a61270e436347d769742188cf9c56b441bf8f39b1118d15644eb64"
+}

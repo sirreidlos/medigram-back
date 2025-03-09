@@ -46,6 +46,7 @@ use axum::{
     routing::{delete, get, post, put},
 };
 use protocol::Nonce;
+use route::consultation::{get_diagnoses, get_prescriptions, get_symptoms};
 use std::time::Duration;
 use tracing::info;
 use uuid::Uuid;
@@ -128,7 +129,8 @@ async fn main() {
         .route("/consultation", get(get_consultations))
         .route("/consultation", post(add_consultation))
         .route("/doctor-profile", get(get_doctor_profile))
-        .route("/doctor-profile", post(set_doctor_profile))
+        // do we really want this? or should we go with the email approach
+        // .route("/doctor-profile", post(set_doctor_profile))
         .route("/purchase", get(get_purchases))
         .route("/purchase", post(add_purchase))
         .route("/user", get(get_user))
@@ -136,6 +138,9 @@ async fn main() {
         .route("/user-detail", put(set_user_detail))
         .route("/user-measurement", get(get_user_measurements))
         .route("/user-measurement", post(add_user_measurement))
+        .route("/diagnosis", get(get_diagnoses))
+        .route("/symptom", get(get_symptoms))
+        .route("/prescription", get(get_prescriptions))
         .route("/login", post(auth::login))
         .route("/register", post(auth::register))
         .route("/logout", post(auth::logout))

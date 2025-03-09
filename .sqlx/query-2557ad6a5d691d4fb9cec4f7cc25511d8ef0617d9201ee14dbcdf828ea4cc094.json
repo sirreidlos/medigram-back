@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM diagnoses WHERE consultation_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "diagnosis_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "consultation_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "diagnosis",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "icd_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "severity",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2557ad6a5d691d4fb9cec4f7cc25511d8ef0617d9201ee14dbcdf828ea4cc094"
+}

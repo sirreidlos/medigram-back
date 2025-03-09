@@ -2,12 +2,19 @@ use axum::{Json, http::StatusCode, response::IntoResponse};
 
 use crate::{jwt::AuthError, protocol::ConsentError};
 
+/// Represents all the errors that may occur in the app
 pub enum AppError {
+    /// Error for any error that shouldn't be exposed to the user
     InternalError,
+    /// Error for invalid `NIK` being given
     InvalidNik,
+    /// Error for non-existent data
     RowNotFound,
-    BadPayload,
+    /// Error for when a user tries to access another user's data
+    NotTheSameUser,
+    /// Error for authentication-related issues
     Auth(AuthError),
+    /// Error for consent-related issues
     Consent(ConsentError),
 }
 
@@ -29,12 +36,13 @@ impl IntoResponse for AppError {
                 return consent_error.into_response();
             }
             AppError::InvalidNik => (StatusCode::BAD_REQUEST, "Invalid NIK"),
-            AppError::BadPayload => {
-                (StatusCode::BAD_REQUEST, "Bad Payload Data")
-            }
             AppError::RowNotFound => {
                 (StatusCode::NOT_FOUND, "Row does not exist in the database")
             }
+            AppError::NotTheSameUser => (
+                StatusCode::FORBIDDEN,
+                "You are not allowed to request for this",
+            ),
         };
 
         let body = Json(serde_json::json!({
