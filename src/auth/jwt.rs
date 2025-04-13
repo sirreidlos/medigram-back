@@ -1,44 +1,12 @@
-use axum::{
-    Json,
-    extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
+use crate::auth::AuthError;
+use crate::{AppState, auth::AuthResponse, error::AppError};
+use axum::{Json, extract::State, http::StatusCode};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{
     DecodingKey, EncodingKey, Header, Validation, decode, encode,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-// use tower_http::{cors::{Any, CorsLayer}, limit::RequestBodyLimitLayer};
-use uuid::Uuid;
-
-use crate::{AppState, error::AppError};
-
-// Login request payload
-#[derive(Debug, Deserialize)]
-pub struct LoginRequest {
-    pub email: String,
-    pub password: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct RegisterRequest {
-    pub email: String,
-    pub password: String,
-}
-
-// Authentication response with tokens
-#[derive(Debug, Serialize)]
-pub struct AuthResponse {
-    pub access_token: String,
-    pub expires_in: i64,
-    pub session_id: String,
-    pub token_type: String,
-    pub device_id: Uuid,
-    // base 64
-    pub private_key: String,
-}
 
 // Refresh token request
 #[derive(Debug, Deserialize)]
@@ -77,54 +45,6 @@ impl Keys {
             encoding: EncodingKey::from_secret(secret),
             decoding: DecodingKey::from_secret(secret),
         }
-    }
-}
-
-pub enum AuthError {
-    InvalidToken,
-    ExpiredToken,
-    MissingCredentials,
-    WrongCredentials,
-    TokenCreation,
-    TokenBlacklisted,
-    UserNotFound,
-    EmailUsed,
-}
-
-impl IntoResponse for AuthError {
-    fn into_response(self) -> Response {
-        let (status, error_message) = match self {
-            AuthError::InvalidToken => {
-                (StatusCode::UNAUTHORIZED, "Invalid token")
-            }
-            AuthError::ExpiredToken => {
-                (StatusCode::UNAUTHORIZED, "Token expired")
-            }
-            AuthError::MissingCredentials => {
-                (StatusCode::BAD_REQUEST, "Missing credentials")
-            }
-            AuthError::WrongCredentials => {
-                (StatusCode::UNAUTHORIZED, "Invalid username or password")
-            }
-            AuthError::TokenCreation => {
-                (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token")
-            }
-            AuthError::TokenBlacklisted => {
-                (StatusCode::UNAUTHORIZED, "Token has been revoked")
-            }
-            AuthError::UserNotFound => {
-                (StatusCode::NOT_FOUND, "User not found")
-            }
-            AuthError::EmailUsed => {
-                (StatusCode::CONFLICT, "Email has been registered previously")
-            }
-        };
-
-        let body = Json(serde_json::json!({
-            "error": error_message,
-        }));
-
-        (status, body).into_response()
     }
 }
 

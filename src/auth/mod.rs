@@ -1,41 +1,94 @@
-use argon2::{
-    Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
-    password_hash::{SaltString, rand_core::OsRng},
-};
 use axum::{
     Json, RequestPartsExt,
     extract::{FromRef, FromRequestParts, OptionalFromRequestParts, State},
     http::{StatusCode, request::Parts},
+    response::{IntoResponse, Response},
 };
 use axum_extra::{
     TypedHeader,
     headers::{self, authorization::Bearer},
     typed_header::TypedHeaderRejectionReason,
 };
-use base64::Engine;
-use base64::engine::general_purpose;
-use ed25519_compact::{KeyPair, PublicKey, Seed};
+use ed25519_compact::PublicKey;
 use moka::sync::Cache;
 use rand::{Rng, distr::Alphanumeric, rng};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sqlx::{Pool, Postgres, query, query_as};
-use tracing::{debug, error, info};
+use tracing::error;
 use uuid::Uuid;
+
+pub mod email;
+pub mod jwt;
 
 use crate::{
     AppState,
     error::AppError,
-    jwt::{
-        AuthError, AuthResponse, LoginRequest, RegisterRequest,
-        create_access_token, get_session_id,
-    },
-    protocol::ConsentError,
     schema::{DeviceKey, DoctorProfile, User},
 };
 
 /// Session ID character length
 pub const SESSION_ID_LEN: usize = 64;
+
+// Authentication response with tokens
+#[derive(Debug, Serialize)]
+pub struct AuthResponse {
+    pub access_token: String,
+    pub expires_in: i64,
+    pub session_id: String,
+    pub token_type: String,
+    pub device_id: Uuid,
+    // base 64
+    pub private_key: String,
+}
+
+pub enum AuthError {
+    InvalidToken,
+    ExpiredToken,
+    MissingCredentials,
+    WrongCredentials,
+    TokenCreation,
+    TokenBlacklisted,
+    UserNotFound,
+    EmailUsed,
+}
+
+impl IntoResponse for AuthError {
+    fn into_response(self) -> Response {
+        let (status, error_message) = match self {
+            AuthError::InvalidToken => {
+                (StatusCode::UNAUTHORIZED, "Invalid token")
+            }
+            AuthError::ExpiredToken => {
+                (StatusCode::UNAUTHORIZED, "Token expired")
+            }
+            AuthError::MissingCredentials => {
+                (StatusCode::BAD_REQUEST, "Missing credentials")
+            }
+            AuthError::WrongCredentials => {
+                (StatusCode::UNAUTHORIZED, "Invalid username or password")
+            }
+            AuthError::TokenCreation => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token")
+            }
+            AuthError::TokenBlacklisted => {
+                (StatusCode::UNAUTHORIZED, "Token has been revoked")
+            }
+            AuthError::UserNotFound => {
+                (StatusCode::NOT_FOUND, "User not found")
+            }
+            AuthError::EmailUsed => {
+                (StatusCode::CONFLICT, "Email has been registered previously")
+            }
+        };
+
+        let body = Json(serde_json::json!({
+            "error": error_message,
+        }));
+
+        (status, body).into_response()
+    }
+}
 
 #[derive(Clone)]
 pub struct AuthUser {
@@ -147,52 +200,6 @@ fn create_session_id() -> String {
     session_id
 }
 
-pub async fn register(
-    State(state): State<AppState>,
-    Json(payload): Json<RegisterRequest>,
-) -> Result<(StatusCode, Json<Value>), AppError> {
-    let email = payload.email;
-    let password = payload.password;
-    let salt = SaltString::generate(&mut OsRng);
-    let argon2 = Argon2::default();
-    let password_hash = argon2
-        .hash_password(password.as_bytes(), &salt)
-        .map_err(|e| {
-            error!("error occured while hasing password: {:?}", e);
-            AppError::InternalError
-        })?
-        .to_string();
-
-    sqlx::query!(
-        "INSERT INTO users(email, password_hash) VALUES ($1, $2)",
-        email,
-        password_hash
-    )
-    .execute(&state.db_pool)
-    .await
-    .map_err(|e| {
-        error!("error occured while registering email: {:?}", e);
-
-        match e {
-            sqlx::Error::Database(db_e) => {
-                if db_e.is_unique_violation() {
-                    AuthError::EmailUsed.into()
-                } else {
-                    AppError::InternalError
-                }
-            }
-            _ => AppError::InternalError,
-        }
-    })?;
-
-    info!("Successfully registered email: {}", email);
-
-    Ok((
-        StatusCode::CREATED,
-        Json(json!({ "message": "registration successful" })),
-    ))
-}
-
 async fn query_user(
     email: &str,
     db_pool: &Pool<Postgres>,
@@ -250,62 +257,6 @@ pub async fn retrieve_public_key(
     })
 }
 
-pub async fn login(
-    State(state): State<AppState>,
-    Json(payload): Json<LoginRequest>,
-) -> Result<Json<AuthResponse>, AppError> {
-    // Find the user
-    let email = payload.email;
-    let password = payload.password;
-    let user: User = query_user(&email, &state.db_pool).await?;
-
-    // verify user
-    let password_hash_str: String = user.password_hash;
-    let password_hash: PasswordHash =
-        match PasswordHash::new(&password_hash_str) {
-            Ok(h) => h,
-            Err(_) => {
-                error!("Password hash cannot be parsed");
-                debug!("Hash: {:?}", password_hash_str);
-                return Err(AppError::InternalError);
-            }
-        };
-
-    if Argon2::default()
-        .verify_password(password.as_bytes(), &password_hash)
-        .is_err()
-    {
-        return Err(AuthError::WrongCredentials.into());
-    }
-
-    // create tokens
-    let user_id = user.user_id;
-    let (access_token, expires_in) = create_access_token(&user_id.to_string())?;
-    let session_id = create_session_id();
-    let device_id = Uuid::new_v4();
-    let key_pair = KeyPair::from_seed(Seed::generate());
-
-    let private_key = general_purpose::STANDARD.encode(key_pair.sk.to_vec());
-
-    store_public_key(device_id, user_id, key_pair.pk, &state.db_pool).await?;
-
-    state
-        .recognized_session_id
-        .insert(session_id.clone(), user.user_id);
-
-    info!("User {email} logged in");
-
-    // Return the tokens
-    Ok(Json(AuthResponse {
-        access_token,
-        session_id,
-        token_type: "Bearer".to_string(),
-        expires_in,
-        device_id,
-        private_key,
-    }))
-}
-
 #[derive(Deserialize)]
 pub struct DeviceIDPayload {
     device_id: Uuid,
@@ -331,29 +282,4 @@ pub async fn logout(
     })?;
 
     Ok((StatusCode::OK, Json(json!({ "message": "logged out" }))))
-}
-
-pub async fn auth_middleware(
-    State(state): State<AppState>,
-    headers: axum::http::HeaderMap,
-    mut request: axum::extract::Request,
-    next: axum::middleware::Next,
-) -> Result<axum::response::Response, AuthError> {
-    match get_session_id(&headers) {
-        Some(session_id) => {
-            if let Some(user_id) = state.recognized_session_id.get(session_id) {
-                let data = AuthUser {
-                    user_id,
-                    session_id: todo!(),
-                };
-                request.extensions_mut().insert(data);
-                let response = next.run(request).await;
-
-                Ok(response)
-            } else {
-                Err(AuthError::InvalidToken)
-            }
-        }
-        _ => Err(AuthError::InvalidToken),
-    }
 }

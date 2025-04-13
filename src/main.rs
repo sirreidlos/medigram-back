@@ -24,7 +24,6 @@
 mod auth;
 mod canonical_json;
 mod error;
-mod jwt;
 mod model;
 mod protocol;
 mod route;
@@ -141,8 +140,8 @@ async fn main() {
         .route("/diagnosis/{consultation_id}", get(get_diagnoses))
         .route("/symptom/{consultation_id}", get(get_symptoms))
         .route("/prescription/{consultation_id}", get(get_prescriptions))
-        .route("/login", post(auth::login))
-        .route("/register", post(auth::register))
+        .route("/login", post(auth::email::login))
+        .route("/register", post(auth::email::register))
         .route("/logout", post(auth::logout))
         .route("/request-nonce", get(request_nonce))
         .layer(cors)
