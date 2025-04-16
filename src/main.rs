@@ -21,7 +21,7 @@
 //    - pakai informasi KTP (NIK) dan Nomor Telp
 //    - bisa tambah informasi kesehatan lain (berat badan, tinggi, alergi, dll)
 
-use medigram_back::AppState;
+use medigram::AppState;
 use moka::sync::Cache;
 use sqlx::Pool;
 use sqlx::postgres::Postgres;
@@ -60,7 +60,7 @@ async fn main() {
             .build(),
     };
 
-    let app = medigram_back::app(state);
+    let app = medigram::app(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
