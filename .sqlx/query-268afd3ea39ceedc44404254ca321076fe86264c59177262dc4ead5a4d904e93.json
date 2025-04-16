@@ -22,6 +22,11 @@
         "ordinal": 3,
         "name": "quantity",
         "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "prescription_id",
+        "type_info": "Uuid"
       }
     ],
     "parameters": {
@@ -33,7 +38,8 @@
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
   "hash": "268afd3ea39ceedc44404254ca321076fe86264c59177262dc4ead5a4d904e93"

@@ -1,6 +1,6 @@
 use axum::{Json, http::StatusCode, response::IntoResponse};
 
-use crate::{jwt::AuthError, protocol::ConsentError};
+use crate::{auth::AuthError, protocol::ConsentError};
 
 /// Represents all the errors that may occur in the app
 pub enum AppError {
