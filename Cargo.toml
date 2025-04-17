@@ -9,6 +9,7 @@ axum = { version = "0.8.1", features = ["macros"] }
 axum-extra = { version = "0.10.0", features = ["typed-header"] }
 base64 = "0.22.1"
 chrono = { version = "0.4.39", features = ["serde"] }
+dotenvy = "0.15.7"
 ed25519-compact = { version = "2.1.1", features = ["ed25519"] }
 jsonwebtoken = "9.3.1"
 moka = { version = "0.12.10", features = ["sync"] }
@@ -25,3 +26,7 @@ tower-http = { version = "0.6.2", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["chrono", "env-filter", "std"] }
 uuid = { version = "1.14.0", features = ["serde"] }
+
+[dev-dependencies]
+reqwest = { version = "0.12.15", features = ["json"] }
+anyhow = "1.0.98"
