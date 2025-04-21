@@ -23,6 +23,10 @@ pub struct AllergyIDPayload {
     pub allergy_id: Uuid,
 }
 
+pub async fn health_check() -> String {
+    "It works!".to_owned()
+}
+
 pub async fn get_allergies(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
