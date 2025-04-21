@@ -16,6 +16,7 @@ pub enum AppError {
     Auth(AuthError),
     /// Error for consent-related issues
     Consent(ConsentError),
+    ForeignKeyViolation,
 }
 
 // actual decoration trait check
@@ -41,6 +42,10 @@ impl IntoResponse for AppError {
             }
             AppError::NotTheSameUser => (
                 StatusCode::FORBIDDEN,
+                "You are not allowed to request for this",
+            ),
+            AppError::ForeignKeyViolation => (
+                StatusCode::CONFLICT,
                 "You are not allowed to request for this",
             ),
         };

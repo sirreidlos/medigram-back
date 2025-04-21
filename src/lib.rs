@@ -96,5 +96,6 @@ pub fn app(state: AppState) -> Router {
         .route("/logout", post(auth::logout))
         .route("/request-nonce", get(request_nonce))
         .layer(cors)
+        .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

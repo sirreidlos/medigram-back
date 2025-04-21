@@ -6,7 +6,7 @@ use axum::{
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::{Pool, Postgres, query, query_as};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::{
@@ -78,7 +78,7 @@ pub async fn set_doctor_profile(
         match e {
             sqlx::Error::Database(db_e) => {
                 if db_e.is_foreign_key_violation() {
-                    todo!()
+                    AppError::ForeignKeyViolation
                 } else {
                     AppError::InternalError
                 }

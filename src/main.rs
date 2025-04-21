@@ -26,29 +26,15 @@ use moka::sync::Cache;
 use sqlx::Pool;
 use sqlx::postgres::Postgres;
 use std::time::Duration;
-use tracing::info;
-use tracing_subscriber::{
-    EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt,
-};
 
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::registry()
-        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            format!("{}=trace", env!("CARGO_CRATE_NAME")).into()
-        }))
-        .with(
-            fmt::layer()
-                .event_format(fmt::format()) // Use the correct `Full` format
-                .with_thread_names(true), // Show thread names
-        )
-        .init();
-
-    let db_pool = Pool::<Postgres>::connect(
-        "postgres://postgres@127.0.0.1:5432/medigram",
-    )
-    .await
-    .expect("failed to connect to db");
+#[shuttle_runtime::main]
+async fn axum(
+    #[shuttle_shared_db::Postgres] db_pool: Pool<Postgres>,
+) -> shuttle_axum::ShuttleAxum {
+    sqlx::migrate!()
+        .run(&db_pool)
+        .await
+        .expect("migration failed");
 
     let state = AppState {
         nonce_cache: Cache::builder()
@@ -62,9 +48,5 @@ async fn main() {
 
     let app = medigram::app(state);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
-        .await
-        .unwrap();
-    info!("listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
+    Ok(app.into())
 }

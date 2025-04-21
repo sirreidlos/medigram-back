@@ -15,26 +15,6 @@
       },
       {
         "ordinal": 2,
-        "name": "drug_name",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 3,
-        "name": "doses_in_mg",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 4,
-        "name": "regimen_per_day",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 5,
-        "name": "quantity_per_dose",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 6,
         "name": "instruction",
         "type_info": "Text"
       }
@@ -45,10 +25,6 @@
       ]
     },
     "nullable": [
-      false,
-      false,
-      false,
-      false,
       false,
       false,
       false
