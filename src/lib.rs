@@ -7,24 +7,29 @@ pub mod route;
 pub mod schema;
 
 use axum::{
-    Router,
-    extract::FromRef,
+    Json, Router,
+    extract::{ConnectInfo, FromRef},
     routing::{delete, get, post, put},
 };
 use protocol::Nonce;
-use route::consultation::{get_diagnoses, get_prescriptions, get_symptoms};
 
-use std::time::Duration;
+use std::{net::SocketAddr, time::Duration};
 use uuid::Uuid;
 
 use moka::sync::Cache;
 use sqlx::Pool;
 use sqlx::postgres::Postgres;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::{
+    cors::{Any, CorsLayer},
+    trace::TraceLayer,
+};
 
 use route::{
     allergy::{add_allergy, get_allergies, remove_allergy},
-    consultation::{add_consultation, get_consultations},
+    consultation::{
+        add_consultation, get_consultations, get_diagnoses, get_prescriptions,
+        get_symptoms,
+    },
     doctor_profile::{get_doctor_profile, set_doctor_profile},
     purchase::{add_purchase, get_purchases},
     request_nonce,
