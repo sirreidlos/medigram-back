@@ -13,7 +13,6 @@ use tracing::{debug, error, info};
 use uuid::Uuid;
 
 use crate::AppState;
-use crate::auth::jwt::create_access_token;
 use crate::auth::{
     AuthError, AuthResponse, create_session_id, query_user, store_public_key,
 };
@@ -63,7 +62,6 @@ pub async fn login(
 
     // create tokens
     let user_id = user.user_id;
-    let (access_token, expires_in) = create_access_token(&user_id.to_string())?;
     let session_id = create_session_id();
     let device_id = Uuid::new_v4();
     let key_pair = KeyPair::from_seed(Seed::generate());
@@ -80,10 +78,8 @@ pub async fn login(
 
     // Return the tokens
     Ok(Json(AuthResponse {
-        access_token,
         session_id,
         token_type: "Bearer".to_string(),
-        expires_in,
         device_id,
         private_key,
     }))

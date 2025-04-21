@@ -19,7 +19,6 @@ use tracing::error;
 use uuid::Uuid;
 
 pub mod email;
-pub mod jwt;
 
 use crate::{
     AppState,
@@ -33,8 +32,6 @@ pub const SESSION_ID_LEN: usize = 64;
 // Authentication response with tokens
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
-    pub access_token: String,
-    pub expires_in: i64,
     pub session_id: String,
     pub token_type: String,
     pub device_id: Uuid,

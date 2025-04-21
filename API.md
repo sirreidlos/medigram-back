@@ -36,8 +36,6 @@ Creates `user` object. The `/register` endpoint only creates the user, so a foll
 ## `POST /login`
 Logs in to retrieve authorization information. Please immediately save the `session_id` and always attach it to every [AUTH] endpoints, `device-id` and always send it as a payload for any endpoint that requires it, `private-key` in a safe storage for signing consents. Note that `private-key` is encoded in base64.
 
-TODO: detail the purpose of `access-token`.
-
 ### Request
 ```json
 {
@@ -50,10 +48,8 @@ TODO: detail the purpose of `access-token`.
 `200 OK`
 ```json
 {
-  "access_token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJlNjNhOGJlOC1iMjAwLTRhMGYtODlkMC00NDc5N2ZmMWM5ZDMiLCJleHAiOjE3NDE0NjE1NjksImlhdCI6MTc0MTQ2MDY2OX0.Q9MEqPlRCUJ9Q1Sv7TXl09KU3_4jkjd-RlevAeuwkZI",
   "session_id":"xgsY0ovfKCqpfLHfCZCSaI0AVHt2e6Xnv76VyvXsyJVsKsu89UjdDEWIU9k7IGmc",
   "token_type":"Bearer",
-  "expires_in":900,
   "device_id":"19553e8e-b9bb-4af6-b73a-448e01103125",
   "private_key": "y0eJbsKqY7so2gNwAQ0M0ZlM0... [PRIVATE KEY IN BASE64 STRING]"
 }
