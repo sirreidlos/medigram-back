@@ -7,13 +7,13 @@ pub mod route;
 pub mod schema;
 
 use axum::{
-    Json, Router,
-    extract::{ConnectInfo, FromRef},
+    Router,
+    extract::FromRef,
     routing::{delete, get, post, put},
 };
 use protocol::Nonce;
 
-use std::{net::SocketAddr, time::Duration};
+use std::time::Duration;
 use uuid::Uuid;
 
 use moka::sync::Cache;
@@ -30,7 +30,7 @@ use route::{
         add_consultation, get_consultations, get_diagnoses, get_prescriptions,
         get_symptoms,
     },
-    doctor_profile::{get_doctor_profile, set_doctor_profile},
+    doctor_profile::get_doctor_profile,
     purchase::{add_purchase, get_purchases},
     request_nonce,
     user::get_user,

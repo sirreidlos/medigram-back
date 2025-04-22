@@ -283,10 +283,6 @@ Afterwards, the patient signs it with their private key corresponding to the `de
   "symptoms": ["runny nose", "coughing"],
   "prescriptions": [
     {
-      "drug_name": "Paracetamol",
-      "doses_in_mg": 500,
-      "regimen_per_day": 3,
-      "quantity_per_dose": 1,
       "instruction": "Take after meals with a full glass of water."
     }
   ]

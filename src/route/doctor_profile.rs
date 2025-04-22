@@ -1,12 +1,12 @@
 use axum::{
-    Extension, Json,
+    Json,
     extract::{Path, State},
     http::StatusCode,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
-use sqlx::{Pool, Postgres, query, query_as};
-use tracing::{error, info, warn};
+use sqlx::{query, query_as};
+use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::{

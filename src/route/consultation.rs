@@ -15,7 +15,7 @@ use crate::{
     error::{APIResult, AppError},
     protocol::{Consent, ConsentError},
     route::verify_consent,
-    schema::{Consultation, Diagnosis, DoctorProfile, Prescription, Symptom},
+    schema::{Consultation, Diagnosis, Prescription, Symptom},
 };
 
 pub async fn get_consultations(
