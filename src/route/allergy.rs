@@ -77,17 +77,20 @@ pub async fn remove_allergy(
     AuthUser { user_id, .. }: AuthUser,
     Path(allergy_id): Path<Uuid>,
 ) -> APIResult<(StatusCode, Json<Value>)> {
-    let query_res: sqlx::postgres::PgQueryResult =
-        query!("DELETE FROM allergies WHERE allergy_id = $1", allergy_id)
-            .execute(&state.db_pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "Error while removing allergy {} for {}: {:?}",
-                    allergy_id, user_id, e
-                );
-                AppError::InternalError
-            })?;
+    let query_res: sqlx::postgres::PgQueryResult = query!(
+        "DELETE FROM allergies WHERE allergy_id = $1 AND user_id = $2",
+        allergy_id,
+        user_id
+    )
+    .execute(&state.db_pool)
+    .await
+    .map_err(|e| {
+        error!(
+            "Error while removing allergy {} for {}: {:?}",
+            allergy_id, user_id, e
+        );
+        AppError::InternalError
+    })?;
 
     if query_res.rows_affected() == 0 {
         // assume it doesnt exist
