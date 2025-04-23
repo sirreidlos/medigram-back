@@ -80,7 +80,7 @@ pub fn app(state: AppState) -> Router {
         .route("/", get(health_check))
         .route("/allergy", get(get_allergies))
         .route("/allergy", post(add_allergy))
-        .route("/allergy", delete(remove_allergy))
+        .route("/allergy/{allergy_id}", delete(remove_allergy))
         .route("/consultation", get(get_consultations))
         .route("/consultation", post(add_consultation))
         .route("/doctor-profile/{doctor_id}", get(get_doctor_profile))

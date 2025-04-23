@@ -1,4 +1,8 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::{query, query_as};
@@ -71,7 +75,7 @@ pub async fn add_allergy(
 pub async fn remove_allergy(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
-    Json(AllergyIDPayload { allergy_id }): Json<AllergyIDPayload>,
+    Path(allergy_id): Path<Uuid>,
 ) -> APIResult<(StatusCode, Json<Value>)> {
     let query_res: sqlx::postgres::PgQueryResult =
         query!("DELETE FROM allergies WHERE allergy_id = $1", allergy_id)

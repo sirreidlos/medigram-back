@@ -159,12 +159,10 @@ This scenario may happen when the user has just registered their email but hasn'
 ]
 ```
 
-## `DELETE /allergy` 🔒
+## `DELETE /allergy/{allergy_id}` 🔒
 ### Request
-```json
-{
-  "allergy_id":"242000eb-c263-4041-a040-b3684095694e",
-}
+```
+DELETE /allergy/f7769edf-b06b-4749-b6ff-d91efcca8403
 ```
 
 ### Response (Success)
