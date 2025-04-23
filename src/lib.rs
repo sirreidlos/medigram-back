@@ -25,7 +25,7 @@ use tower_http::{
 };
 
 use route::{
-    allergy::{add_allergy, get_allergies, health_check, remove_allergy},
+    allergy::{add_allergy, get_allergies, remove_allergy},
     consultation::{
         add_consultation, get_consultations, get_diagnoses, get_prescriptions,
         get_symptoms,
@@ -64,6 +64,10 @@ impl FromRef<AppState> for Cache<Nonce, ()> {
     fn from_ref(input: &AppState) -> Self {
         input.nonce_cache.clone()
     }
+}
+
+pub async fn health_check() -> String {
+    "It works!".to_owned()
 }
 
 pub fn app(state: AppState) -> Router {
