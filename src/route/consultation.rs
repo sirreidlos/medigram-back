@@ -12,7 +12,7 @@ use uuid::Uuid;
 use crate::{
     AppState,
     auth::{AuthUser, LicensedUser},
-    error::{APIResult, AppError},
+    error::{APIResult, AppError, DatabaseError},
     protocol::{Consent, ConsentError},
     route::verify_consent,
     schema::{Consultation, Diagnosis, Prescription, Symptom},
@@ -184,7 +184,10 @@ pub async fn check_user(
             e
         );
 
-        AppError::InternalError
+        match e {
+            sqlx::Error::RowNotFound => DatabaseError::RowNotFound.into(),
+            _ => AppError::InternalError,
+        }
     })?;
 
     if let Some(doctor) = doctor {

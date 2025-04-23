@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::{
     AppState,
     auth::AuthUser,
-    error::{APIResult, AppError},
+    error::{APIResult, AppError, DatabaseError},
 };
 
 #[derive(Serialize)]
@@ -16,6 +16,10 @@ pub struct UserOpaque {
     email: String,
 }
 
+// TODO: is this meant for doctors to see the patient info?
+// in that case, change the UserOpaque to give the name and NIK
+// and also make sure that only licensed users can request for this
+// perhaps also make sure that they're connected?
 pub async fn get_user(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
@@ -29,7 +33,7 @@ pub async fn get_user(
     .await
     .map(Json)
     .map_err(|e| match e {
-        sqlx::Error::RowNotFound => AppError::RowNotFound,
+        sqlx::Error::RowNotFound => DatabaseError::RowNotFound.into(),
         e => {
             error!("Error while fetching user for {}: {:?}", user_id, e);
             AppError::InternalError

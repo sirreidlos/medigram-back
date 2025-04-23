@@ -40,13 +40,25 @@ pub struct AuthResponse {
 }
 
 pub enum AuthError {
+    /// Error for invalid `session_id`
+    ///
+    /// Returns `StatusCode::UNAUTHORIZED`
     InvalidToken,
-    ExpiredToken,
+    /// Error for missing `session_id` in the header
+    ///
+    /// Returns `StatusCode::BAD_REQUEST`
     MissingCredentials,
+    /// Error for incorrect credentials (e.g. mismatch password)
+    ///
+    /// Returns `StatusCode::UNAUTHORIZED`
     WrongCredentials,
-    TokenCreation,
-    TokenBlacklisted,
+    /// Error for non-existent user
+    ///
+    /// Returns `StatusCode::NOT_FOUND`
     UserNotFound,
+    /// Error for trying to register on a registered email
+    ///
+    /// Returns `StatusCode::CONFLICT`
     EmailUsed,
 }
 
@@ -56,20 +68,11 @@ impl IntoResponse for AuthError {
             AuthError::InvalidToken => {
                 (StatusCode::UNAUTHORIZED, "Invalid token")
             }
-            AuthError::ExpiredToken => {
-                (StatusCode::UNAUTHORIZED, "Token expired")
-            }
             AuthError::MissingCredentials => {
                 (StatusCode::BAD_REQUEST, "Missing credentials")
             }
             AuthError::WrongCredentials => {
                 (StatusCode::UNAUTHORIZED, "Invalid username or password")
-            }
-            AuthError::TokenCreation => {
-                (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token")
-            }
-            AuthError::TokenBlacklisted => {
-                (StatusCode::UNAUTHORIZED, "Token has been revoked")
             }
             AuthError::UserNotFound => {
                 (StatusCode::NOT_FOUND, "User not found")

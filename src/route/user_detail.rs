@@ -8,7 +8,7 @@ use tracing::{error, info, trace};
 use crate::{
     AppState,
     auth::AuthUser,
-    error::{APIResult, AppError},
+    error::{APIResult, AppError, DatabaseError},
     protocol::{NIK_LOWERBOUND, NIK_UPPERBOUND, Nik},
     schema::UserDetail,
 };
@@ -35,7 +35,7 @@ pub async fn get_user_detail(
     .map_err(|e| match e {
         sqlx::Error::RowNotFound => {
             info!("{user_id} hasn't set their profile");
-            AppError::RowNotFound
+            DatabaseError::RowNotFound.into()
         }
         e => {
             error!("Error while setting user_detail for {}: {:?}", user_id, e);

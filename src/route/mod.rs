@@ -49,7 +49,7 @@ pub async fn consent_required_example(
     let nonce = consent.nonce;
 
     if !state.nonce_cache.contains_key(&nonce) {
-        return Err(ConsentError::NonceGone.into());
+        return Err(ConsentError::NonceExpired.into());
     }
 
     state.nonce_cache.remove(&nonce);
@@ -89,7 +89,7 @@ pub async fn verify_consent(
 ) -> Result<(), AppError> {
     let nonce = consent.nonce;
     if !nonce_cache.contains_key(&nonce) {
-        return Err(ConsentError::NonceGone.into());
+        return Err(ConsentError::NonceExpired.into());
     }
     nonce_cache.remove(&nonce);
 

@@ -6,13 +6,13 @@ use axum::{
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::{query, query_as};
-use tracing::{error, info};
+use tracing::{error, warn};
 use uuid::Uuid;
 
 use crate::{
     AppState,
     auth::AuthUser,
-    error::{APIResult, AppError},
+    error::{APIResult, AppError, DatabaseError},
     schema::DoctorProfile,
 };
 
@@ -37,8 +37,8 @@ pub async fn get_doctor_profile(
     .map(Json)
     .map_err(|e| match e {
         sqlx::Error::RowNotFound => {
-            info!("doctor profile for {doctor_id} does not exist");
-            AppError::RowNotFound
+            warn!("doctor profile for {doctor_id} does not exist");
+            DatabaseError::RowNotFound.into()
         }
         e => {
             error!(
@@ -78,7 +78,7 @@ pub async fn set_doctor_profile(
         match e {
             sqlx::Error::Database(db_e) => {
                 if db_e.is_foreign_key_violation() {
-                    AppError::ForeignKeyViolation
+                    DatabaseError::ForeignKeyViolation.into()
                 } else {
                     AppError::InternalError
                 }

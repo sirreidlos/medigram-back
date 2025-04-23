@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::{
     AppState,
     auth::AuthUser,
-    error::{APIResult, AppError},
+    error::{APIResult, AppError, DatabaseError},
     schema::{Allergy, AllergySeverity},
 };
 
@@ -82,13 +82,16 @@ pub async fn remove_allergy(
             .execute(&state.db_pool)
             .await
             .map_err(|e| {
-                error!("Error while adding allergy for {}: {:?}", user_id, e);
+                error!(
+                    "Error while removing allergy {} for {}: {:?}",
+                    allergy_id, user_id, e
+                );
                 AppError::InternalError
             })?;
 
     if query_res.rows_affected() == 0 {
         // assume it doesnt exist
-        return Err(AppError::RowNotFound);
+        return Err(DatabaseError::RowNotFound.into());
     }
 
     Ok((

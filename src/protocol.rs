@@ -90,11 +90,29 @@ impl Consent {
 }
 
 pub enum ConsentError {
+    /// Error from user not consenting to the procedure
+    ///
+    /// Returns `StatusCode::UNAUTHORIZED`
     NonConsent,
-    NonceGone,
+    /// Error for using an expired nonce
+    ///
+    /// Returns `StatusCode::GONE`
+    NonceExpired,
+    /// Error from the device key not being found in the database
+    ///
+    /// Returns `StatusCode::NOT_FOUND`
     DeviceNotFound,
+    /// Error for user and device mismatch
+    ///
+    /// Returns `StatusCode::BAD_REQUEST`
     UserDeviceMismatch,
+    /// Error from the device key expiring
+    ///
+    /// Returns `StatusCode::GONE`
     KeyExpired,
+    /// Error from a non-licensed user trying to act as one
+    ///
+    /// Returns `StatusCode::FORBIDDEN`
     NotLicensed,
 }
 
@@ -104,8 +122,8 @@ impl IntoResponse for ConsentError {
             ConsentError::NonConsent => {
                 (StatusCode::UNAUTHORIZED, "User did not consent")
             }
-            ConsentError::NonceGone => {
-                (StatusCode::UNAUTHORIZED, "Nonce has been used or expired")
+            ConsentError::NonceExpired => {
+                (StatusCode::GONE, "Nonce has been used or expired")
             }
             ConsentError::DeviceNotFound => {
                 (StatusCode::NOT_FOUND, "Device not found")
