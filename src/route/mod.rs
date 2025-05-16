@@ -10,7 +10,8 @@ use axum::{Json, extract::State, http::StatusCode, response::Html};
 use chrono::{DateTime, Utc};
 use ed25519_compact::PublicKey;
 use moka::sync::Cache;
-use rand::Rng;
+use rand::distr::SampleString;
+use serde_json::{Value, json};
 use sqlx::{Pool, Postgres, query_as};
 use tracing::{error, trace};
 use uuid::Uuid;
@@ -29,16 +30,19 @@ pub async fn handler(user: AuthUser) -> Html<String> {
     Html(format!("<h1>Hello, {}!</h1>", user.user_id))
 }
 
-pub async fn request_nonce(
-    State(state): State<AppState>,
-) -> CanonicalJson<Nonce> {
-    let mut nonce: Nonce = [0u8; 16];
-    rand::rng().fill(&mut nonce);
-    state.nonce_cache.insert(nonce, ());
+pub async fn request_nonce(State(state): State<AppState>) -> Json<Value> {
+    // let mut nonce: Nonce = [0u8; 16];
+    let nonce: String =
+        rand::distr::Alphanumeric.sample_string(&mut rand::rng(), 16);
+    let expiration_date = chrono::Utc::now() + NONCE_TTL;
+    state.nonce_cache.insert(nonce.clone(), ());
 
     trace!("nonce requested: {:?}", nonce);
 
-    CanonicalJson(nonce)
+    Json(json!({
+        "nonce": nonce,
+        "expiration_date": expiration_date
+    }))
 }
 
 pub async fn consent_required_example(
@@ -46,13 +50,15 @@ pub async fn consent_required_example(
     Json(payload): Json<ExampleConsentRequired>,
 ) -> Result<StatusCode, AppError> {
     let consent: Consent = payload.consent;
-    let nonce = consent.nonce;
+    {
+        let nonce = consent.nonce.as_str();
 
-    if !state.nonce_cache.contains_key(&nonce) {
-        return Err(ConsentError::NonceExpired.into());
+        if !state.nonce_cache.contains_key(nonce) {
+            return Err(ConsentError::NonceExpired.into());
+        }
+
+        state.nonce_cache.remove(nonce);
     }
-
-    state.nonce_cache.remove(&nonce);
 
     let device_id = consent.signer_device_id;
     let key_info = retrieve_public_key(device_id, &state.db_pool).await?;
@@ -87,11 +93,13 @@ pub async fn verify_consent(
     db_pool: &Pool<Postgres>,
     nonce_cache: &Cache<Nonce, ()>,
 ) -> Result<(), AppError> {
-    let nonce = consent.nonce;
-    if !nonce_cache.contains_key(&nonce) {
-        return Err(ConsentError::NonceExpired.into());
+    {
+        let nonce = consent.nonce.as_str();
+        if !nonce_cache.contains_key(nonce) {
+            return Err(ConsentError::NonceExpired.into());
+        }
+        nonce_cache.remove(nonce);
     }
-    nonce_cache.remove(&nonce);
 
     let device_id = consent.signer_device_id;
     let device_key = query_as!(

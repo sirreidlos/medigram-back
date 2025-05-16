@@ -255,6 +255,17 @@ GET /doctor-profile/23b41c6a-88a9-465f-abf6-4b2b318f1a0c
 ```
 
 # Consultation
+
+## `GET /request-nonce`
+### Response
+`200 OK`
+```json
+{
+  "expiration_date":"2025-05-23T17:07:18.511183938Z",
+  "nonce":"XjMOZe0G6cUndk4U"
+}
+```
+
 ## `POST /consultation` 🔒 (ONLY ⚕️)
 Before requesting, do remember to request for a nonce through `GET /request-nonce`. After that, serialize the `device_id` and the `nonce` with a canonical JSON format, something like:
 ```json

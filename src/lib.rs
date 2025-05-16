@@ -39,7 +39,8 @@ use route::{
 };
 
 // 7d
-const NONCE_TTL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
+pub const NONCE_TTL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
+pub const SESSION_TTL: Duration = Duration::from_secs(30 * 24 * 60 * 60);
 
 #[derive(Clone)]
 pub struct AppState {

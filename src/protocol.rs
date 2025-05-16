@@ -23,7 +23,7 @@ pub const NIK_LOWERBOUND: i64 = 1_000_000_000_000_000;
 /// digits.
 // #[derive(Hash, Eq, PartialEq)]
 pub type Nik = i64;
-pub type Nonce = [u8; 16];
+pub type Nonce = String;
 // impl Display for Nik {
 //     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 //         self.0.fmt(f)
@@ -61,7 +61,7 @@ pub type Nonce = [u8; 16];
 /// the server. The nonce will then be stored in a timed cache for a certain
 /// amount of time, in which it will be kept until either it expires or a client
 /// sent a message with a consent that uses the nonce.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Consent {
     pub signer_device_id: Uuid,
     pub nonce: Nonce,
@@ -78,8 +78,7 @@ impl Consent {
     ///
     /// Requires the other party's `PublicKey`.
     pub fn verify(&self, pk: &PublicKey) -> bool {
-        // let msg = format!("{}{}", self.signer, self.nonce);
-        let message = to_string(&(self.signer_device_id, self.nonce));
+        let message = to_string(&(self.signer_device_id, &self.nonce));
 
         match message {
             Ok(msg) => pk.verify(msg, &self.signature).is_ok(),
@@ -231,8 +230,8 @@ mod test {
     #[test]
     fn test_consent_serialization() {
         let keypair = KeyPair::generate();
-        let nonce = [42u8; 16];
-        let message = to_string(&(Uuid::nil(), nonce)).unwrap();
+        let nonce = String::from("abcdefghijklmnop");
+        let message = to_string(&(Uuid::nil(), &nonce)).unwrap();
         let signature = keypair.sk.sign(message, None);
 
         let consent = Consent {
@@ -254,8 +253,8 @@ mod test {
     #[test]
     fn test_consent_verification() {
         let keypair = KeyPair::generate();
-        let nonce = [99u8; 16];
-        let message = to_string(&(Uuid::nil(), nonce)).unwrap();
+        let nonce = String::from("abcdefghijklmnop");
+        let message = to_string(&(Uuid::nil(), &nonce)).unwrap();
         let signature = keypair.sk.sign(message, None);
 
         let consent = Consent {
@@ -271,8 +270,8 @@ mod test {
     fn test_consent_verification_failure() {
         let keypair = KeyPair::generate();
         let another_keypair = KeyPair::generate();
-        let nonce = [1u8; 16];
-        let message = to_string(&(Uuid::nil(), nonce)).unwrap();
+        let nonce = String::from("abcdefghijklmnop");
+        let message = to_string(&(Uuid::nil(), &nonce)).unwrap();
         let signature = keypair.sk.sign(message, None);
 
         let consent = Consent {

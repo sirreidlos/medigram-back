@@ -21,7 +21,7 @@
 //    - pakai informasi KTP (NIK) dan Nomor Telp
 //    - bisa tambah informasi kesehatan lain (berat badan, tinggi, alergi, dll)
 
-use medigram::AppState;
+use medigram::{AppState, NONCE_TTL, SESSION_TTL};
 use moka::sync::Cache;
 use sqlx::Pool;
 use sqlx::postgres::Postgres;
@@ -29,7 +29,10 @@ use std::time::Duration;
 
 #[shuttle_runtime::main]
 async fn axum(
-    #[shuttle_shared_db::Postgres] db_pool: Pool<Postgres>,
+    #[shuttle_shared_db::Postgres(
+        local_uri = "postgres://postgres@127.0.0.1:5432/medigram"
+    )]
+    db_pool: Pool<Postgres>,
 ) -> shuttle_axum::ShuttleAxum {
     sqlx::migrate!()
         .run(&db_pool)
@@ -37,12 +40,10 @@ async fn axum(
         .expect("migration failed");
 
     let state = AppState {
-        nonce_cache: Cache::builder()
-            .time_to_live(Duration::from_secs(7 * 24 * 60 * 60))
-            .build(),
+        nonce_cache: Cache::builder().time_to_live(NONCE_TTL).build(),
         db_pool,
         recognized_session_id: Cache::builder()
-            .time_to_live(Duration::from_secs(30 * 24 * 60 * 60))
+            .time_to_live(SESSION_TTL)
             .build(),
     };
 
