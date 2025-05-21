@@ -39,6 +39,40 @@ pub async fn get_own_consultations(
     })
 }
 
+pub async fn get_doctor_consultations(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+    doctor: Option<LicensedUser>,
+    Path((doctor_id, user_id_query)): Path<(Uuid, Uuid)>,
+) -> APIResult<Json<Vec<Consultation>>> {
+    if user_id_query != user_id && doctor.is_none() {
+        return Err(AppError::NotTheSameUser);
+    }
+
+    let doctor_unwrap = doctor.unwrap();
+    if doctor_unwrap.doctor_id != doctor_id {
+        return Err(AppError::NotTheSameUser);
+    }
+
+    query_as!(
+        Consultation,
+        "SELECT * FROM consultations WHERE user_id = $1 AND doctor_id = $2",
+        user_id_query,
+        doctor_id
+    )
+    .fetch_all(&state.db_pool)
+    .await
+    .map(Json)
+    .map_err(|e| {
+        error!(
+            "Error while retrieving consultations between doctor {} and user \
+             {}: {:?}",
+            doctor_id, user_id_query, e
+        );
+        AppError::InternalError
+    })
+}
+
 #[derive(Deserialize)]
 pub struct DiagnosisPayload {
     diagnosis: String,

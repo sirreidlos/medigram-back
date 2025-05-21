@@ -37,13 +37,45 @@ pub async fn get_doctor_profile(
     .map(Json)
     .map_err(|e| match e {
         sqlx::Error::RowNotFound => {
-            warn!("doctor profile for {doctor_id} does not exist");
+            warn!("doctor profile for doctor {doctor_id} does not exist");
             DatabaseError::RowNotFound.into()
         }
         e => {
             error!(
                 "Error while fetching doctor_profile for {}: {:?}",
                 doctor_id, e
+            );
+            AppError::InternalError
+        }
+    })
+}
+
+pub async fn get_doctor_profile_by_user_id(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+    Path(user_id_query): Path<Uuid>,
+) -> APIResult<Json<DoctorProfile>> {
+    if user_id != user_id_query {
+        return Err(AppError::NotTheSameUser);
+    }
+
+    query_as!(
+        DoctorProfile,
+        "SELECT * FROM doctor_profiles WHERE user_id = $1",
+        user_id
+    )
+    .fetch_one(&state.db_pool)
+    .await
+    .map(Json)
+    .map_err(|e| match e {
+        sqlx::Error::RowNotFound => {
+            warn!("doctor profile for user {user_id} does not exist");
+            DatabaseError::RowNotFound.into()
+        }
+        e => {
+            error!(
+                "Error while fetching doctor_profile for {}: {:?}",
+                user_id, e
             );
             AppError::InternalError
         }

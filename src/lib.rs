@@ -30,10 +30,10 @@ use route::{
         remove_own_allergy,
     },
     consultation::{
-        add_user_consultation, get_own_consultations, get_user_diagnoses,
-        get_user_prescriptions, get_user_symptoms,
+        add_user_consultation, get_doctor_consultations, get_own_consultations,
+        get_user_diagnoses, get_user_prescriptions, get_user_symptoms,
     },
-    doctor_profile::get_doctor_profile,
+    doctor_profile::{get_doctor_profile, get_doctor_profile_by_user_id},
     purchase::{add_own_purchase, get_own_purchases},
     request_nonce,
     user::{get_own_info, get_user_info},
@@ -96,6 +96,10 @@ pub fn app(state: AppState) -> Router {
             post(add_user_consultation),
         )
         .route(
+            "/doctors/{doctor_id}/users/{user_id_query}/consultations",
+            get(get_doctor_consultations),
+        )
+        .route(
             "/users/{user_id_query}/diagnoses/{consultation_id}",
             get(get_user_diagnoses),
         )
@@ -109,6 +113,10 @@ pub fn app(state: AppState) -> Router {
         )
         // =================== USER INFORMATION ===================
         .route("/doctors/{doctor_id}/profile", get(get_doctor_profile))
+        .route(
+            "/users/{user_id_query}/doctor-profile",
+            get(get_doctor_profile_by_user_id),
+        )
         // do we really want this? or should we go with the email approach
         // .route("/doctor-profile", post(set_doctor_profile))
         .route("/me", get(get_own_info))
