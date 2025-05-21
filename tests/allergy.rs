@@ -21,9 +21,9 @@ static ALLERGY_ID: &str = "f7769edf-b06b-4749-b6ff-d91efcca8403";
 #[sqlx::test(fixtures("users"))]
 async fn add_allergy(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let (session_id, user_id) = login_as_alice(&mut app).await;
+    let (session_id, _user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/allergy"))
+        .uri(format!("http://{API_ROOT_URL}/me/allergies"))
         .method("POST")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
@@ -49,9 +49,9 @@ async fn add_allergy(db_pool: Pool<Postgres>) {
 #[sqlx::test(fixtures("users"))]
 async fn get_allergies_empty(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let (session_id, user_id) = login_as_alice(&mut app).await;
+    let (session_id, _user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/allergy/{user_id}"))
+        .uri(format!("http://{API_ROOT_URL}/me/allergies"))
         .method("GET")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
@@ -75,9 +75,9 @@ async fn get_allergies_empty(db_pool: Pool<Postgres>) {
 #[sqlx::test(fixtures("users", "allergies"))]
 async fn get_allergies_nonempty(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let (session_id, user_id) = login_as_alice(&mut app).await;
+    let (session_id, _user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/allergy/{user_id}"))
+        .uri(format!("http://{API_ROOT_URL}/me/allergies"))
         .method("GET")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
@@ -112,9 +112,9 @@ async fn get_allergies_nonempty(db_pool: Pool<Postgres>) {
 #[sqlx::test(fixtures("users", "allergies"))]
 async fn delete_allergy_success(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let (session_id, user_id) = login_as_alice(&mut app).await;
+    let (session_id, _user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/allergy/delete/{ALLERGY_ID}"))
+        .uri(format!("http://{API_ROOT_URL}/me/allergies/{ALLERGY_ID}"))
         .method("DELETE")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
@@ -134,9 +134,9 @@ async fn delete_allergy_success(db_pool: Pool<Postgres>) {
 #[sqlx::test(fixtures("users"))]
 async fn delete_allergy_not_found(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let (session_id, user_id) = login_as_alice(&mut app).await;
+    let (session_id, _user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/allergy/delete/{ALLERGY_ID}"))
+        .uri(format!("http://{API_ROOT_URL}/me/allergies/{ALLERGY_ID}"))
         .method("DELETE")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
@@ -156,9 +156,9 @@ async fn delete_allergy_not_found(db_pool: Pool<Postgres>) {
 #[sqlx::test(fixtures("users", "allergies"))]
 async fn delete_allergy_different_user(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let (session_id, user_id) = login_as_bob(&mut app).await;
+    let (session_id, _user_id) = login_as_bob(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/allergy/delete/{ALLERGY_ID}"))
+        .uri(format!("http://{API_ROOT_URL}/me/allergies/{ALLERGY_ID}"))
         .method("DELETE")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))

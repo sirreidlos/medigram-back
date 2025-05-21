@@ -43,6 +43,27 @@ pub async fn get_user_measurements(
     })
 }
 
+pub async fn get_own_measurements(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+) -> APIResult<Json<Vec<UserMeasurement>>> {
+    sqlx::query_as!(
+        UserMeasurement,
+        "SELECT * FROM user_measurements WHERE user_id = $1",
+        user_id
+    )
+    .fetch_all(&state.db_pool)
+    .await
+    .map(Json)
+    .map_err(|e| {
+        error!(
+            "Error while fetching user_measurements for {}: {:?}",
+            user_id, e
+        );
+        AppError::InternalError
+    })
+}
+
 #[derive(Deserialize)]
 pub struct UserMeasurementPayload {
     pub height_in_cm: f32,
@@ -50,7 +71,7 @@ pub struct UserMeasurementPayload {
     pub measured_at: Option<DateTime<Utc>>,
 }
 
-pub async fn add_user_measurement(
+pub async fn add_own_measurement(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     Json(UserMeasurementPayload {

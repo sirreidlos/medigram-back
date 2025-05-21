@@ -23,7 +23,7 @@ pub struct UserOpaque {
 // in that case, change the UserOpaque to give the name and NIK
 // and also make sure that only licensed users can request for this
 // perhaps also make sure that they're connected?
-pub async fn get_user(
+pub async fn get_user_info(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
@@ -37,6 +37,27 @@ pub async fn get_user(
         UserOpaque,
         "SELECT user_id, email FROM users WHERE user_id = $1",
         user_id_query
+    )
+    .fetch_one(&state.db_pool)
+    .await
+    .map(Json)
+    .map_err(|e| match e {
+        sqlx::Error::RowNotFound => DatabaseError::RowNotFound.into(),
+        e => {
+            error!("Error while fetching user for {}: {:?}", user_id, e);
+            AppError::InternalError
+        }
+    })
+}
+
+pub async fn get_own_info(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+) -> APIResult<Json<UserOpaque>> {
+    query_as!(
+        UserOpaque,
+        "SELECT user_id, email FROM users WHERE user_id = $1",
+        user_id
     )
     .fetch_one(&state.db_pool)
     .await

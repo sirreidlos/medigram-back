@@ -18,7 +18,7 @@ use crate::{
     schema::{Consultation, Diagnosis, Prescription, Symptom},
 };
 
-pub async fn get_consultations(
+pub async fn get_own_consultations(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
 ) -> APIResult<Json<Vec<Consultation>>> {
@@ -60,9 +60,10 @@ pub struct ConsultationPayload {
     prescriptions: Vec<PrescriptionPayload>,
 }
 
-pub async fn add_consultation(
+pub async fn add_user_consultation(
     State(state): State<AppState>,
     doctor: Option<LicensedUser>,
+    Path(user_id_query): Path<Uuid>,
     Json(ConsultationPayload {
         consent,
         user_id,
@@ -76,7 +77,7 @@ pub async fn add_consultation(
     }
     let doctor_id = doctor.unwrap().doctor_id;
 
-    verify_consent(consent, user_id, &state.db_pool, &state.nonce_cache)
+    verify_consent(consent, user_id_query, &state.db_pool, &state.nonce_cache)
         .await?;
 
     let mut tx: Transaction<Postgres> =
@@ -90,7 +91,7 @@ pub async fn add_consultation(
         "INSERT INTO consultations (doctor_id, user_id) VALUES ($1, $2) \
          RETURNING consultation_id, doctor_id, user_id",
         doctor_id,
-        user_id
+        user_id_query
     )
     .fetch_one(&mut *tx)
     .await
@@ -166,6 +167,7 @@ pub async fn add_consultation(
 
 pub async fn check_user(
     user_id: Uuid,
+    user_id_query: Uuid,
     doctor: Option<LicensedUser>,
     consultation_id: Uuid,
     db_pool: &Pool<Postgres>,
@@ -200,16 +202,27 @@ pub async fn check_user(
         return Err(AppError::NotTheSameUser);
     }
 
+    if user_id != user_id_query {
+        return Err(AppError::NotTheSameUser);
+    }
+
     Ok(())
 }
 
-pub async fn get_diagnoses(
+pub async fn get_user_diagnoses(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
-    Path(consultation_id): Path<Uuid>,
+    Path((user_id_query, consultation_id)): Path<(Uuid, Uuid)>,
 ) -> APIResult<Json<Vec<Diagnosis>>> {
-    check_user(user_id, doctor, consultation_id, &state.db_pool).await?;
+    check_user(
+        user_id,
+        user_id_query,
+        doctor,
+        consultation_id,
+        &state.db_pool,
+    )
+    .await?;
 
     query_as!(
         Diagnosis,
@@ -226,13 +239,20 @@ pub async fn get_diagnoses(
     })
 }
 
-pub async fn get_symptoms(
+pub async fn get_user_symptoms(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
-    Path(consultation_id): Path<Uuid>,
+    Path((user_id_query, consultation_id)): Path<(Uuid, Uuid)>,
 ) -> APIResult<Json<Vec<Symptom>>> {
-    check_user(user_id, doctor, consultation_id, &state.db_pool).await?;
+    check_user(
+        user_id,
+        user_id_query,
+        doctor,
+        consultation_id,
+        &state.db_pool,
+    )
+    .await?;
 
     query_as!(
         Symptom,
@@ -249,13 +269,20 @@ pub async fn get_symptoms(
     })
 }
 
-pub async fn get_prescriptions(
+pub async fn get_user_prescriptions(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
-    Path(consultation_id): Path<Uuid>,
+    Path((user_id_query, consultation_id)): Path<(Uuid, Uuid)>,
 ) -> APIResult<Json<Vec<Prescription>>> {
-    check_user(user_id, doctor, consultation_id, &state.db_pool).await?;
+    check_user(
+        user_id,
+        user_id_query,
+        doctor,
+        consultation_id,
+        &state.db_pool,
+    )
+    .await?;
 
     query_as!(
         Prescription,

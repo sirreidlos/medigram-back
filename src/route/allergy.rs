@@ -27,7 +27,7 @@ pub struct AllergyIDPayload {
     pub allergy_id: Uuid,
 }
 
-pub async fn get_allergies(
+pub async fn get_user_allergies(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
@@ -52,7 +52,26 @@ pub async fn get_allergies(
     })
 }
 
-pub async fn add_allergy(
+pub async fn get_own_allergies(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+) -> APIResult<Json<Vec<Allergy>>> {
+    query_as!(
+        Allergy,
+        "SELECT allergy_id, user_id, allergen, severity AS \"severity: \
+         AllergySeverity\" FROM allergies WHERE user_id = $1",
+        user_id
+    )
+    .fetch_all(&state.db_pool)
+    .await
+    .map(Json)
+    .map_err(|e| {
+        error!("Error while retrieving allergies for {}: {:?}", user_id, e);
+        AppError::InternalError
+    })
+}
+
+pub async fn add_own_allergy(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     Json(AllergyPayload { allergen, severity }): Json<AllergyPayload>,
@@ -78,7 +97,7 @@ pub async fn add_allergy(
     ))
 }
 
-pub async fn remove_allergy(
+pub async fn remove_own_allergy(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     Path(allergy_id): Path<Uuid>,

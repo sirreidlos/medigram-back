@@ -25,17 +25,22 @@ use tower_http::{
 };
 
 use route::{
-    allergy::{add_allergy, get_allergies, remove_allergy},
+    allergy::{
+        add_own_allergy, get_own_allergies, get_user_allergies,
+        remove_own_allergy,
+    },
     consultation::{
-        add_consultation, get_consultations, get_diagnoses, get_prescriptions,
-        get_symptoms,
+        add_user_consultation, get_own_consultations, get_user_diagnoses,
+        get_user_prescriptions, get_user_symptoms,
     },
     doctor_profile::get_doctor_profile,
-    purchase::{add_purchase, get_purchases},
+    purchase::{add_own_purchase, get_own_purchases},
     request_nonce,
-    user::get_user,
-    user_detail::{get_user_detail, set_user_detail},
-    user_measurement::{add_user_measurement, get_user_measurements},
+    user::{get_own_info, get_user_info},
+    user_detail::{get_own_details, get_user_details, set_own_details},
+    user_measurement::{
+        add_own_measurement, get_own_measurements, get_user_measurements,
+    },
 };
 
 // 7d
@@ -79,27 +84,47 @@ pub fn app(state: AppState) -> Router {
 
     Router::new()
         .route("/", get(health_check))
-        .route("/allergy/{user_id_query}", get(get_allergies))
-        .route("/allergy", post(add_allergy))
-        .route("/allergy/delete/{allergy_id}", delete(remove_allergy))
-        .route("/consultation", get(get_consultations))
-        .route("/consultation", post(add_consultation))
-        .route("/doctor-profile/{doctor_id}", get(get_doctor_profile))
+        // =================== ALLERGIES ===================
+        .route("/me/allergies", get(get_own_allergies))
+        .route("/users/{user_id_query}/allergies", get(get_user_allergies))
+        .route("/me/allergies", post(add_own_allergy))
+        .route("/me/allergies/{allergy_id}", delete(remove_own_allergy))
+        // =================== CONSULTATIONS ===================
+        .route("/me/consultations", get(get_own_consultations))
+        .route(
+            "/users/{user_id_query}/consultations",
+            post(add_user_consultation),
+        )
+        .route(
+            "/users/{user_id_query}/diagnoses/{consultation_id}",
+            get(get_user_diagnoses),
+        )
+        .route(
+            "/users/{user_id_query}/symptoms/{consultation_id}",
+            get(get_user_symptoms),
+        )
+        .route(
+            "/users/{user_id_query}/prescriptions/{consultation_id}",
+            get(get_user_prescriptions),
+        )
+        // =================== USER INFORMATION ===================
+        .route("/doctors/{doctor_id}/profile", get(get_doctor_profile))
         // do we really want this? or should we go with the email approach
         // .route("/doctor-profile", post(set_doctor_profile))
-        .route("/purchase", get(get_purchases))
-        .route("/purchase", post(add_purchase))
-        .route("/user/{user_id_query}", get(get_user))
-        .route("/user-detail/{user_id_query}", get(get_user_detail))
-        .route("/user-detail", put(set_user_detail))
+        .route("/me", get(get_own_info))
+        .route("/users/{user_id_query}", get(get_user_info))
+        .route("/me/details", get(get_own_details))
+        .route("/users/{user_id_query}/details", get(get_user_details))
+        .route("/me/details", put(set_own_details))
         .route(
-            "/user-measurement/{user_id_query}",
+            "/users/{user_id_query}/measurements",
             get(get_user_measurements),
         )
-        .route("/user-measurement", post(add_user_measurement))
-        .route("/diagnosis/{consultation_id}", get(get_diagnoses))
-        .route("/symptom/{consultation_id}", get(get_symptoms))
-        .route("/prescription/{consultation_id}", get(get_prescriptions))
+        .route("/me/measurements", get(get_own_measurements))
+        .route("/me/measurements", post(add_own_measurement))
+        .route("/me/purchases", get(get_own_purchases))
+        .route("/me/purchases", post(add_own_purchase))
+        // =================== AUTH ===================
         .route("/login", post(auth::email::login))
         .route("/register", post(auth::email::register))
         .route("/logout", post(auth::logout))

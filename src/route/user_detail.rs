@@ -26,7 +26,7 @@ pub struct UserDetailPayload {
     pub gender: char,
 }
 
-pub async fn get_user_detail(
+pub async fn get_user_details(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
@@ -63,13 +63,44 @@ pub async fn get_user_detail(
     }))
 }
 
+pub async fn get_own_details(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+) -> APIResult<Json<UserDetail>> {
+    let row = sqlx::query!(
+        "SELECT user_id, nik, name, dob, gender FROM user_details WHERE \
+         user_id = $1",
+        user_id
+    )
+    .fetch_one(&state.db_pool)
+    .await
+    .map_err(|e| match e {
+        sqlx::Error::RowNotFound => {
+            info!("{user_id} hasn't set their profile");
+            DatabaseError::RowNotFound.into()
+        }
+        e => {
+            error!("Error while setting user_detail for {}: {:?}", user_id, e);
+            AppError::InternalError
+        }
+    })?;
+
+    Ok(Json(UserDetail {
+        user_id: row.user_id,
+        nik: row.nik,
+        name: row.name,
+        dob: row.dob,
+        gender: row.gender.chars().next().unwrap_or('U'),
+    }))
+}
+
 // TODO: if user already has details, decide on whether to automatically handle
 // it so this method also updates the user_detail, or give that responsibility
 // to another method for `PATCH /user-detail`
 //
 // Also handle the error when there's a unique constraint violation from trying
 // to insert for the same user twice
-pub async fn set_user_detail(
+pub async fn set_own_details(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     Json(payload): Json<UserDetailPayload>,

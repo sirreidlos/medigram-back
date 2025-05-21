@@ -19,9 +19,9 @@ use common::*;
 #[sqlx::test(fixtures("users"))]
 async fn add_measurements(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let (session_id, user_id) = login_as_bob(&mut app).await;
+    let (session_id, _user_id) = login_as_bob(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/user-measurement"))
+        .uri(format!("http://{API_ROOT_URL}/me/measurements"))
         .method("POST")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
@@ -48,9 +48,9 @@ async fn add_measurements(db_pool: Pool<Postgres>) {
 #[sqlx::test(fixtures("users"))]
 async fn set_user_detail(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let (session_id, user_id) = login_as_bob(&mut app).await;
+    let (session_id, _user_id) = login_as_bob(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/user-detail"))
+        .uri(format!("http://{API_ROOT_URL}/me/details"))
         .method("PUT")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
@@ -78,9 +78,9 @@ async fn set_user_detail(db_pool: Pool<Postgres>) {
 #[sqlx::test(fixtures("users", "measurements"))]
 async fn get_measurements(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let (session_id, user_id) = login_as_alice(&mut app).await;
+    let (session_id, _user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/user-measurement/{user_id}"))
+        .uri(format!("http://{API_ROOT_URL}/me/measurements"))
         .method("GET")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
@@ -113,9 +113,9 @@ async fn get_measurements(db_pool: Pool<Postgres>) {
 #[sqlx::test(fixtures("users", "details"))]
 async fn get_user_detail(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let (session_id, user_id) = login_as_alice(&mut app).await;
+    let (session_id, _user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/user-detail/{user_id}"))
+        .uri(format!("http://{API_ROOT_URL}/me/details"))
         .method("GET")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))

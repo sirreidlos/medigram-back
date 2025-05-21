@@ -12,7 +12,7 @@ use crate::{
     schema::Purchase,
 };
 
-pub async fn get_purchases(
+pub async fn get_own_purchases(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
 ) -> APIResult<Json<Vec<Purchase>>> {
@@ -36,7 +36,7 @@ pub struct PurchasePayload {
     quantity: i32,
 }
 
-pub async fn add_purchase(
+pub async fn add_own_purchase(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     Json(PurchasePayload {

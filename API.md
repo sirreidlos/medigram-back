@@ -48,6 +48,7 @@ Logs in to retrieve authorization information. Please immediately save the `sess
 `200 OK`
 ```json
 {
+  "user_id": "41676bb2-8561-47fe-9271-4c7e89defa7c",
   "session_id":"xgsY0ovfKCqpfLHfCZCSaI0AVHt2e6Xnv76VyvXsyJVsKsu89UjdDEWIU9k7IGmc",
   "token_type":"Bearer",
   "device_id":"19553e8e-b9bb-4af6-b73a-448e01103125",
@@ -74,7 +75,7 @@ Logs in to retrieve authorization information. Please immediately save the `sess
 
 # User Information
 
-## `GET /user` 🔒
+## `GET /me` 🔒| `GET /users/{user_id_query}` 🔒/ ⚕️
 ### Response
 `200 OK`
 ```json
@@ -84,8 +85,16 @@ Logs in to retrieve authorization information. Please immediately save the `sess
 }
 ```
 
-## `GET /user-detail` 🔒
+### Response
+`200 OK`
+```json
+{
+  "user_id":"e63a8be8-b200-4a0f-89d0-44797ff1c9d3",
+  "email":"test@example.com"
+}
+```
 
+## `GET /me/details` 🔒 | `GET /users/{user_id_query}/details` 🔒/ ⚕️
 ### Response (User data not found)
 This scenario may happen when the user has just registered their email but hasn't proceeded with filling their data (e.g. closing the app after registration)
 
@@ -106,7 +115,7 @@ This scenario may happen when the user has just registered their email but hasn'
 }
 ```
 
-## `PUT /user-detail` 🔒
+## `PUT /me/details` 🔒
 ### Request
 ```json
 {
@@ -125,7 +134,7 @@ This scenario may happen when the user has just registered their email but hasn'
 
 
 
-## `POST /allergy` 🔒
+## `POST /me/allergies` 🔒
 ### Request
 ```json
 {
@@ -139,7 +148,7 @@ This scenario may happen when the user has just registered their email but hasn'
 {"message":"allergy added"}
 ```
 
-## `GET /allergy` 🔒
+## `GET /me/allergies` 🔒 | `GET /users/{user_id_query}/allergies` 🔒/ ⚕️
 ### Response (empty)
 `200 OK`
 ```json
@@ -159,10 +168,10 @@ This scenario may happen when the user has just registered their email but hasn'
 ]
 ```
 
-## `DELETE /allergy/{allergy_id}` 🔒
+## `DELETE /me/allergies/{allergy_id}` 🔒
 ### Request
 ```
-DELETE /allergy/f7769edf-b06b-4749-b6ff-d91efcca8403
+DELETE /me/allergies/f7769edf-b06b-4749-b6ff-d91efcca8403
 ```
 
 ### Response (Success)
@@ -177,7 +186,7 @@ DELETE /allergy/f7769edf-b06b-4749-b6ff-d91efcca8403
 {"error":"Row does not exist in the database"}
 ```
 
-## `POST /user-measurement` 🔒
+## `POST /me/measurements` 🔒
 ### Request
 ```json
 {
@@ -200,7 +209,7 @@ DELETE /allergy/f7769edf-b06b-4749-b6ff-d91efcca8403
 {"message":"Successfully added user measurement"}
 ```
 
-## `GET /user-measurement` 🔒
+## `GET /me/measurements` 🔒 | `GET /users/{user_id_query}/measurements` 🔒/ ⚕️
 
 ### Response
 ```json
@@ -229,10 +238,10 @@ DELETE /allergy/f7769edf-b06b-4749-b6ff-d91efcca8403
 ```
 
 # Doctor
-## `GET /doctor-profile/{doctor_id}` 🔒
+## `GET /doctors/{doctor_id}/profile` 🔒
 ### Request
 ```
-GET /doctor-profile/23b41c6a-88a9-465f-abf6-4b2b318f1a0c
+GET /doctors/23b41c6a-88a9-465f-abf6-4b2b318f1a0c/profile
 ```
 
 ### Response
@@ -266,7 +275,7 @@ GET /doctor-profile/23b41c6a-88a9-465f-abf6-4b2b318f1a0c
 }
 ```
 
-## `POST /consultation` 🔒 (ONLY ⚕️)
+## `POST /users/{user_id}/consultations` 🔒 (ONLY ⚕️)
 Before requesting, do remember to request for a nonce through `GET /request-nonce`. After that, serialize the `device_id` and the `nonce` with a canonical JSON format, something like:
 ```json
 "[\"862f034f-c705-48ff-bd0e-3a239c6c575e\",[59,227,41,67,102,181,171,84,15,176,74,12,137,163,111,222]]"
@@ -305,7 +314,7 @@ Afterwards, the patient signs it with their private key corresponding to the `de
 {"message":"consultation record added"}
 ```
 
-## `GET /consultation` 🔒⚕️
+## `GET /me/consultations` 🔒 | `GET /users/{user_id_query}/consultations` 🔒/⚕️
 
 ### Response
 `200 OK`
@@ -325,11 +334,11 @@ Afterwards, the patient signs it with their private key corresponding to the `de
 []
 ```
 
-## `GET /diagnosis/{consultation_id}` 🔒⚕️
+## `GET /users/{user_id_query}/diagnoses/{consultation_id}` 🔒/⚕️
 
 ### Request
 ```
-GET /diagnosis/51df7e84-7d5a-492f-9eb3-ace107ca66ec
+GET /users/41676bb2-8561-47fe-9271-4c7e89defa7c/diagnoses/51df7e84-7d5a-492f-9eb3-ace107ca66ec
 ```
 
 ### Response
@@ -352,11 +361,11 @@ GET /diagnosis/51df7e84-7d5a-492f-9eb3-ace107ca66ec
 {"error":"You are not allowed to request for this"}
 ```
 
-## `GET /symptom/{consultation_id}` 🔒⚕️
+## `GET /users/{user_id_query}/symptoms/{consultation_id}` 🔒/⚕️
 
 ### Request
 ```
-GET /symptom/51df7e84-7d5a-492f-9eb3-ace107ca66ec
+GET /users/41676bb2-8561-47fe-9271-4c7e89defa7c/51df7e84-7d5a-492f-9eb3-ace107ca66ec
 ```
 
 ### Response
@@ -376,11 +385,11 @@ GET /symptom/51df7e84-7d5a-492f-9eb3-ace107ca66ec
 ]
 ```
 
-## `GET /prescription/{consultation_id}` 🔒⚕️
+## `GET /users/{user_id_query}/prescriptions/{consultation_id}` 🔒/⚕️
 
 ### Request
 ```
-GET /prescription/51df7e84-7d5a-492f-9eb3-ace107ca66ec
+GET /users/41676bb2-8561-47fe-9271-4c7e89defa7c/51df7e84-7d5a-492f-9eb3-ace107ca66ec
 ```
 
 ### Response
