@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM consultations WHERE user_id = $1",
+  "query": "SELECT * FROM consultations WHERE user_id = $1 AND doctor_id = $2",
   "describe": {
     "columns": [
       {
@@ -26,6 +26,7 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -36,5 +37,5 @@
       false
     ]
   },
-  "hash": "36f450ee959e5848516cc8291bfb846ee3a648513b89dbda48566356a64b863c"
+  "hash": "b3e09f6a1bbbd99ee332144df642aaddb8949c42486e55c640145229e02c78f7"
 }

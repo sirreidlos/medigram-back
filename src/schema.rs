@@ -100,6 +100,7 @@ pub struct Consultation {
     pub consultation_id: Uuid,
     pub doctor_id: Uuid,
     pub user_id: Uuid,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Serialize)]

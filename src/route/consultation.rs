@@ -147,7 +147,7 @@ pub async fn add_user_consultation(
     let consultation = query_as!(
         Consultation,
         "INSERT INTO consultations (doctor_id, user_id) VALUES ($1, $2) \
-         RETURNING consultation_id, doctor_id, user_id",
+         RETURNING consultation_id, doctor_id, user_id, created_at",
         doctor_id,
         user_id_query
     )
