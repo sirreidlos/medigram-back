@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
-    auth::AuthUser,
+    auth::{AuthUser, LicensedUser},
     error::{APIResult, AppError, DatabaseError},
     schema::{Allergy, AllergySeverity},
 };
@@ -30,12 +30,18 @@ pub struct AllergyIDPayload {
 pub async fn get_allergies(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
+    doctor: Option<LicensedUser>,
+    Path(user_id_query): Path<Uuid>,
 ) -> APIResult<Json<Vec<Allergy>>> {
+    if user_id_query != user_id && doctor.is_none() {
+        return Err(AppError::NotTheSameUser);
+    }
+
     query_as!(
         Allergy,
         "SELECT allergy_id, user_id, allergen, severity AS \"severity: \
          AllergySeverity\" FROM allergies WHERE user_id = $1",
-        user_id
+        user_id_query
     )
     .fetch_all(&state.db_pool)
     .await

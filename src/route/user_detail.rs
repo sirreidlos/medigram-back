@@ -1,13 +1,18 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+};
 use chrono::NaiveDate;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::query;
 use tracing::{error, info, trace};
+use uuid::Uuid;
 
 use crate::{
     AppState,
-    auth::AuthUser,
+    auth::{AuthUser, LicensedUser},
     error::{APIResult, AppError, DatabaseError},
     protocol::{NIK_LOWERBOUND, NIK_UPPERBOUND, Nik},
     schema::UserDetail,
@@ -24,11 +29,17 @@ pub struct UserDetailPayload {
 pub async fn get_user_detail(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
+    doctor: Option<LicensedUser>,
+    Path(user_id_query): Path<Uuid>,
 ) -> APIResult<Json<UserDetail>> {
+    if user_id_query != user_id && doctor.is_none() {
+        return Err(AppError::NotTheSameUser);
+    }
+
     let row = sqlx::query!(
         "SELECT user_id, nik, name, dob, gender FROM user_details WHERE \
          user_id = $1",
-        user_id
+        user_id_query
     )
     .fetch_one(&state.db_pool)
     .await

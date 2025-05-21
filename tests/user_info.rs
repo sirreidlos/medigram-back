@@ -19,7 +19,7 @@ use common::*;
 #[sqlx::test(fixtures("users"))]
 async fn add_measurements(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let session_id = login_as_bob(&mut app).await;
+    let (session_id, user_id) = login_as_bob(&mut app).await;
     let request = Request::builder()
         .uri(format!("http://{API_ROOT_URL}/user-measurement"))
         .method("POST")
@@ -48,7 +48,7 @@ async fn add_measurements(db_pool: Pool<Postgres>) {
 #[sqlx::test(fixtures("users"))]
 async fn set_user_detail(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let session_id = login_as_bob(&mut app).await;
+    let (session_id, user_id) = login_as_bob(&mut app).await;
     let request = Request::builder()
         .uri(format!("http://{API_ROOT_URL}/user-detail"))
         .method("PUT")
@@ -78,9 +78,9 @@ async fn set_user_detail(db_pool: Pool<Postgres>) {
 #[sqlx::test(fixtures("users", "measurements"))]
 async fn get_measurements(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let session_id = login_as_alice(&mut app).await;
+    let (session_id, user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/user-measurement"))
+        .uri(format!("http://{API_ROOT_URL}/user-measurement/{user_id}"))
         .method("GET")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
@@ -113,9 +113,9 @@ async fn get_measurements(db_pool: Pool<Postgres>) {
 #[sqlx::test(fixtures("users", "details"))]
 async fn get_user_detail(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
-    let session_id = login_as_alice(&mut app).await;
+    let (session_id, user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/user-detail"))
+        .uri(format!("http://{API_ROOT_URL}/user-detail/{user_id}"))
         .method("GET")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))

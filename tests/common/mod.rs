@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use axum::{
     Router,
-    body::Body,
+    body::{Body, Bytes},
     http::{Request, Response, StatusCode},
 };
 use http_body_util::BodyExt;
@@ -11,6 +11,7 @@ use moka::sync::Cache;
 use serde_json::{Value, json};
 use sqlx::{Pool, Postgres};
 use tower::{Service, ServiceExt};
+use uuid::Uuid;
 
 pub static API_ROOT_URL: &str = "127.0.0.1:3001";
 
@@ -28,10 +29,8 @@ pub fn get_app(db_pool: Pool<Postgres>) -> Router {
     medigram::app(state)
 }
 
-pub async fn extract_session_id(res: Response<Body>) -> String {
-    let login_body = res.into_body().collect().await.unwrap().to_bytes();
-
-    let login_body: Value = serde_json::from_slice(&login_body).unwrap();
+pub async fn extract_session_id(body_bytes: &Bytes) -> String {
+    let login_body: Value = serde_json::from_slice(body_bytes).unwrap();
     login_body
         .get("session_id")
         .and_then(|v| v.as_str())
@@ -39,7 +38,13 @@ pub async fn extract_session_id(res: Response<Body>) -> String {
         .to_string()
 }
 
-pub async fn login_as_alice(app: &mut Router) -> String {
+pub async fn extract_user_id(body_bytes: &Bytes) -> Uuid {
+    let login_body: Value = serde_json::from_slice(body_bytes).unwrap();
+    Uuid::parse_str(login_body.get("user_id").and_then(|v| v.as_str()).unwrap())
+        .expect("user_id not a parsable Uuid")
+}
+
+pub async fn login_as_alice(app: &mut Router) -> (String, Uuid) {
     let request = Request::builder()
         .uri(format!("http://{API_ROOT_URL}/login"))
         .method("POST")
@@ -61,10 +66,20 @@ pub async fn login_as_alice(app: &mut Router) -> String {
         .unwrap();
     assert_eq!(login_response.status(), StatusCode::OK);
 
-    extract_session_id(login_response).await
+    let login_body = login_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
+
+    (
+        extract_session_id(&login_body).await,
+        extract_user_id(&login_body).await,
+    )
 }
 
-pub async fn login_as_bob(app: &mut Router) -> String {
+pub async fn login_as_bob(app: &mut Router) -> (String, Uuid) {
     let request = Request::builder()
         .uri(format!("http://{API_ROOT_URL}/login"))
         .method("POST")
@@ -86,5 +101,15 @@ pub async fn login_as_bob(app: &mut Router) -> String {
         .unwrap();
     assert_eq!(login_response.status(), StatusCode::OK);
 
-    extract_session_id(login_response).await
+    let login_body = login_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
+
+    (
+        extract_session_id(&login_body).await,
+        extract_user_id(&login_body).await,
+    )
 }

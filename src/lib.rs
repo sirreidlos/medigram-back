@@ -79,9 +79,9 @@ pub fn app(state: AppState) -> Router {
 
     Router::new()
         .route("/", get(health_check))
-        .route("/allergy", get(get_allergies))
+        .route("/allergy/{user_id_query}", get(get_allergies))
         .route("/allergy", post(add_allergy))
-        .route("/allergy/{allergy_id}", delete(remove_allergy))
+        .route("/allergy/delete/{allergy_id}", delete(remove_allergy))
         .route("/consultation", get(get_consultations))
         .route("/consultation", post(add_consultation))
         .route("/doctor-profile/{doctor_id}", get(get_doctor_profile))
@@ -89,10 +89,13 @@ pub fn app(state: AppState) -> Router {
         // .route("/doctor-profile", post(set_doctor_profile))
         .route("/purchase", get(get_purchases))
         .route("/purchase", post(add_purchase))
-        .route("/user", get(get_user))
-        .route("/user-detail", get(get_user_detail))
+        .route("/user/{user_id_query}", get(get_user))
+        .route("/user-detail/{user_id_query}", get(get_user_detail))
         .route("/user-detail", put(set_user_detail))
-        .route("/user-measurement", get(get_user_measurements))
+        .route(
+            "/user-measurement/{user_id_query}",
+            get(get_user_measurements),
+        )
         .route("/user-measurement", post(add_user_measurement))
         .route("/diagnosis/{consultation_id}", get(get_diagnoses))
         .route("/symptom/{consultation_id}", get(get_symptoms))
