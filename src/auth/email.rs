@@ -78,6 +78,7 @@ pub async fn login(
 
     // Return the tokens
     Ok(Json(AuthResponse {
+        user_id,
         session_id,
         token_type: "Bearer".to_string(),
         device_id,

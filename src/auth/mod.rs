@@ -32,6 +32,7 @@ pub const SESSION_ID_LEN: usize = 64;
 // Authentication response with tokens
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
+    pub user_id: Uuid,
     pub session_id: String,
     pub token_type: String,
     pub device_id: Uuid,
