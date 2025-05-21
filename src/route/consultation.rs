@@ -39,7 +39,31 @@ pub async fn get_own_consultations(
     })
 }
 
-pub async fn get_doctor_consultations(
+pub async fn get_own_doctor_consultations(
+    State(state): State<AppState>,
+    _: AuthUser,
+    doctor: Option<LicensedUser>,
+) -> APIResult<Json<Vec<Consultation>>> {
+    let doctor = doctor.ok_or(AppError::NotTheSameUser)?;
+
+    query_as!(
+        Consultation,
+        "SELECT * FROM consultations WHERE doctor_id = $1",
+        doctor.doctor_id
+    )
+    .fetch_all(&state.db_pool)
+    .await
+    .map(Json)
+    .map_err(|e| {
+        error!(
+            "Error while retrieving consultations for doctor {}: {:?}",
+            doctor.doctor_id, e
+        );
+        AppError::InternalError
+    })
+}
+
+pub async fn get_doctor_consultations_with_user(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,

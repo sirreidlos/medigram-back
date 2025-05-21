@@ -30,7 +30,8 @@ use route::{
         remove_own_allergy,
     },
     consultation::{
-        add_user_consultation, get_doctor_consultations, get_own_consultations,
+        add_user_consultation, get_doctor_consultations_with_user,
+        get_own_consultations, get_own_doctor_consultations,
         get_user_diagnoses, get_user_prescriptions, get_user_symptoms,
     },
     doctor_profile::{get_doctor_profile, get_doctor_profile_by_user_id},
@@ -96,8 +97,12 @@ pub fn app(state: AppState) -> Router {
             post(add_user_consultation),
         )
         .route(
+            "/me/doctor/consultations",
+            get(get_own_doctor_consultations),
+        )
+        .route(
             "/doctors/{doctor_id}/users/{user_id_query}/consultations",
-            get(get_doctor_consultations),
+            get(get_doctor_consultations_with_user),
         )
         .route(
             "/users/{user_id_query}/diagnoses/{consultation_id}",
