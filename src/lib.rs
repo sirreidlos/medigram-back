@@ -30,9 +30,11 @@ use route::{
         remove_own_allergy,
     },
     consultation::{
-        add_user_consultation, get_doctor_consultations_with_user,
-        get_own_consultations, get_own_doctor_consultations,
-        get_user_diagnoses, get_user_prescriptions, get_user_symptoms,
+        add_user_consultation, get_consultation_diagnoses,
+        get_consultation_prescriptions, get_consultation_symptoms,
+        get_doctor_consultations_with_user, get_own_consultation_single,
+        get_own_consultations, get_own_consultations_as_doctor,
+        get_user_consultations,
     },
     doctor_profile::{get_doctor_profile, get_doctor_profile_by_user_id},
     purchase::{add_own_purchase, get_own_purchases},
@@ -93,28 +95,37 @@ pub fn app(state: AppState) -> Router {
         // =================== CONSULTATIONS ===================
         .route("/me/consultations", get(get_own_consultations))
         .route(
+            "/me/consultations/{consultation_id}",
+            get(get_own_consultation_single),
+        )
+        .route(
+            "/users/{user_id_query}/consultations",
+            get(get_user_consultations),
+        )
+        // is this necessary?
+        .route(
             "/users/{user_id_query}/consultations",
             post(add_user_consultation),
         )
         .route(
-            "/me/doctor/consultations",
-            get(get_own_doctor_consultations),
+            "/doctor/consultations",
+            get(get_own_consultations_as_doctor),
         )
         .route(
             "/doctors/{doctor_id}/users/{user_id_query}/consultations",
             get(get_doctor_consultations_with_user),
         )
         .route(
-            "/users/{user_id_query}/diagnoses/{consultation_id}",
-            get(get_user_diagnoses),
+            "/consultations/{consultation_id}/diagnoses",
+            get(get_consultation_diagnoses),
         )
         .route(
-            "/users/{user_id_query}/symptoms/{consultation_id}",
-            get(get_user_symptoms),
+            "/consultations/{consultation_id}/symptoms",
+            get(get_consultation_symptoms),
         )
         .route(
-            "/users/{user_id_query}/prescriptions/{consultation_id}",
-            get(get_user_prescriptions),
+            "/consultations/{consultation_id}/prescriptions",
+            get(get_consultation_prescriptions),
         )
         // =================== USER INFORMATION ===================
         .route("/doctors/{doctor_id}/profile", get(get_doctor_profile))

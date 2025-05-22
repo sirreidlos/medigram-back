@@ -39,9 +39,59 @@ pub async fn get_own_consultations(
     })
 }
 
-pub async fn get_own_doctor_consultations(
+pub async fn get_own_consultation_single(
     State(state): State<AppState>,
-    _: AuthUser,
+    AuthUser { user_id, .. }: AuthUser,
+    Path(consultation_id): Path<Uuid>,
+) -> APIResult<Json<Consultation>> {
+    query_as!(
+        Consultation,
+        "SELECT * FROM consultations WHERE user_id = $1 AND consultation_id = \
+         $2",
+        user_id,
+        consultation_id
+    )
+    .fetch_one(&state.db_pool)
+    .await
+    .map(Json)
+    .map_err(|e| {
+        error!(
+            "Error while retrieving consultations for {}: {:?}",
+            user_id, e
+        );
+        AppError::InternalError
+    })
+}
+
+pub async fn get_user_consultations(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+    Path(user_id_query): Path<Uuid>,
+    doctor: Option<LicensedUser>,
+) -> APIResult<Json<Vec<Consultation>>> {
+    if user_id != user_id_query && doctor.is_none() {
+        return Err(AppError::NotTheSameUser);
+    }
+
+    query_as!(
+        Consultation,
+        "SELECT * FROM consultations WHERE user_id = $1",
+        user_id
+    )
+    .fetch_all(&state.db_pool)
+    .await
+    .map(Json)
+    .map_err(|e| {
+        error!(
+            "Error while retrieving consultations for {}: {:?}",
+            user_id_query, e
+        );
+        AppError::InternalError
+    })
+}
+
+pub async fn get_own_consultations_as_doctor(
+    State(state): State<AppState>,
     doctor: Option<LicensedUser>,
 ) -> APIResult<Json<Vec<Consultation>>> {
     let doctor = doctor.ok_or(AppError::NotTheSameUser)?;
@@ -225,7 +275,6 @@ pub async fn add_user_consultation(
 
 pub async fn check_user(
     user_id: Uuid,
-    user_id_query: Uuid,
     doctor: Option<LicensedUser>,
     consultation_id: Uuid,
     db_pool: &Pool<Postgres>,
@@ -260,27 +309,16 @@ pub async fn check_user(
         return Err(AppError::NotTheSameUser);
     }
 
-    if user_id != user_id_query {
-        return Err(AppError::NotTheSameUser);
-    }
-
     Ok(())
 }
 
-pub async fn get_user_diagnoses(
+pub async fn get_consultation_diagnoses(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
-    Path((user_id_query, consultation_id)): Path<(Uuid, Uuid)>,
+    Path(consultation_id): Path<Uuid>,
 ) -> APIResult<Json<Vec<Diagnosis>>> {
-    check_user(
-        user_id,
-        user_id_query,
-        doctor,
-        consultation_id,
-        &state.db_pool,
-    )
-    .await?;
+    check_user(user_id, doctor, consultation_id, &state.db_pool).await?;
 
     query_as!(
         Diagnosis,
@@ -297,20 +335,13 @@ pub async fn get_user_diagnoses(
     })
 }
 
-pub async fn get_user_symptoms(
+pub async fn get_consultation_symptoms(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
-    Path((user_id_query, consultation_id)): Path<(Uuid, Uuid)>,
+    Path(consultation_id): Path<Uuid>,
 ) -> APIResult<Json<Vec<Symptom>>> {
-    check_user(
-        user_id,
-        user_id_query,
-        doctor,
-        consultation_id,
-        &state.db_pool,
-    )
-    .await?;
+    check_user(user_id, doctor, consultation_id, &state.db_pool).await?;
 
     query_as!(
         Symptom,
@@ -327,20 +358,13 @@ pub async fn get_user_symptoms(
     })
 }
 
-pub async fn get_user_prescriptions(
+pub async fn get_consultation_prescriptions(
     State(state): State<AppState>,
     AuthUser { user_id, .. }: AuthUser,
     doctor: Option<LicensedUser>,
-    Path((user_id_query, consultation_id)): Path<(Uuid, Uuid)>,
+    Path(consultation_id): Path<Uuid>,
 ) -> APIResult<Json<Vec<Prescription>>> {
-    check_user(
-        user_id,
-        user_id_query,
-        doctor,
-        consultation_id,
-        &state.db_pool,
-    )
-    .await?;
+    check_user(user_id, doctor, consultation_id, &state.db_pool).await?;
 
     query_as!(
         Prescription,
