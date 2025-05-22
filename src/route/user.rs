@@ -25,18 +25,18 @@ pub struct UserOpaque {
 // perhaps also make sure that they're connected?
 pub async fn get_user_info(
     State(state): State<AppState>,
-    AuthUser { user_id, .. }: AuthUser,
+    auth: AuthUser,
     doctor: Option<LicensedUser>,
-    Path(user_id_query): Path<Uuid>,
+    Path(user_id): Path<Uuid>,
 ) -> APIResult<Json<UserOpaque>> {
-    if user_id_query != user_id && doctor.is_none() {
+    if user_id != auth.user_id && doctor.is_none() {
         return Err(AppError::NotTheSameUser);
     }
 
     query_as!(
         UserOpaque,
         "SELECT user_id, email FROM users WHERE user_id = $1",
-        user_id_query
+        user_id
     )
     .fetch_one(&state.db_pool)
     .await

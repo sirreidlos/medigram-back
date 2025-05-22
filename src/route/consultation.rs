@@ -65,11 +65,11 @@ pub async fn get_own_consultation_single(
 
 pub async fn get_user_consultations(
     State(state): State<AppState>,
-    AuthUser { user_id, .. }: AuthUser,
-    Path(user_id_query): Path<Uuid>,
+    auth: AuthUser,
     doctor: Option<LicensedUser>,
+    Path(user_id): Path<Uuid>,
 ) -> APIResult<Json<Vec<Consultation>>> {
-    if user_id != user_id_query && doctor.is_none() {
+    if auth.user_id != user_id && doctor.is_none() {
         return Err(AppError::NotTheSameUser);
     }
 
@@ -84,7 +84,7 @@ pub async fn get_user_consultations(
     .map_err(|e| {
         error!(
             "Error while retrieving consultations for {}: {:?}",
-            user_id_query, e
+            user_id, e
         );
         AppError::InternalError
     })
@@ -115,11 +115,11 @@ pub async fn get_own_consultations_as_doctor(
 
 pub async fn get_doctor_consultations_with_user(
     State(state): State<AppState>,
-    AuthUser { user_id, .. }: AuthUser,
+    auth: AuthUser,
     doctor: Option<LicensedUser>,
-    Path((doctor_id, user_id_query)): Path<(Uuid, Uuid)>,
+    Path((doctor_id, user_id)): Path<(Uuid, Uuid)>,
 ) -> APIResult<Json<Vec<Consultation>>> {
-    if user_id_query != user_id && doctor.is_none() {
+    if user_id != auth.user_id && doctor.is_none() {
         return Err(AppError::NotTheSameUser);
     }
 
@@ -131,7 +131,7 @@ pub async fn get_doctor_consultations_with_user(
     query_as!(
         Consultation,
         "SELECT * FROM consultations WHERE user_id = $1 AND doctor_id = $2",
-        user_id_query,
+        user_id,
         doctor_id
     )
     .fetch_all(&state.db_pool)
@@ -141,7 +141,7 @@ pub async fn get_doctor_consultations_with_user(
         error!(
             "Error while retrieving consultations between doctor {} and user \
              {}: {:?}",
-            doctor_id, user_id_query, e
+            doctor_id, user_id, e
         );
         AppError::InternalError
     })
@@ -171,10 +171,10 @@ pub struct ConsultationPayload {
 pub async fn add_user_consultation(
     State(state): State<AppState>,
     doctor: Option<LicensedUser>,
-    Path(user_id_query): Path<Uuid>,
+    Path(user_id): Path<Uuid>,
     Json(ConsultationPayload {
         consent,
-        user_id,
+        user_id: _user_id,
         diagnoses,
         symptoms,
         prescriptions,
@@ -185,7 +185,7 @@ pub async fn add_user_consultation(
     }
     let doctor_id = doctor.unwrap().doctor_id;
 
-    verify_consent(consent, user_id_query, &state.db_pool, &state.nonce_cache)
+    verify_consent(consent, user_id, &state.db_pool, &state.nonce_cache)
         .await?;
 
     let mut tx: Transaction<Postgres> =
@@ -199,7 +199,7 @@ pub async fn add_user_consultation(
         "INSERT INTO consultations (doctor_id, user_id) VALUES ($1, $2) \
          RETURNING consultation_id, doctor_id, user_id, created_at",
         doctor_id,
-        user_id_query
+        user_id
     )
     .fetch_one(&mut *tx)
     .await

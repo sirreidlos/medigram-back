@@ -52,13 +52,9 @@ pub async fn get_doctor_profile(
 
 pub async fn get_doctor_profile_by_user_id(
     State(state): State<AppState>,
-    AuthUser { user_id, .. }: AuthUser,
-    Path(user_id_query): Path<Uuid>,
+    auth: AuthUser,
+    Path(user_id): Path<Uuid>,
 ) -> APIResult<Json<DoctorProfile>> {
-    if user_id != user_id_query {
-        return Err(AppError::NotTheSameUser);
-    }
-
     query_as!(
         DoctorProfile,
         "SELECT * FROM doctor_profiles WHERE user_id = $1",

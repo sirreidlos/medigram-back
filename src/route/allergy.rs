@@ -29,11 +29,11 @@ pub struct AllergyIDPayload {
 
 pub async fn get_user_allergies(
     State(state): State<AppState>,
-    AuthUser { user_id, .. }: AuthUser,
+    auth: AuthUser,
     doctor: Option<LicensedUser>,
-    Path(user_id_query): Path<Uuid>,
+    Path(user_id): Path<Uuid>,
 ) -> APIResult<Json<Vec<Allergy>>> {
-    if user_id_query != user_id && doctor.is_none() {
+    if user_id != auth.user_id && doctor.is_none() {
         return Err(AppError::NotTheSameUser);
     }
 
@@ -41,7 +41,7 @@ pub async fn get_user_allergies(
         Allergy,
         "SELECT allergy_id, user_id, allergen, severity AS \"severity: \
          AllergySeverity\" FROM allergies WHERE user_id = $1",
-        user_id_query
+        user_id
     )
     .fetch_all(&state.db_pool)
     .await

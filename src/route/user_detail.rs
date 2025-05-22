@@ -28,18 +28,18 @@ pub struct UserDetailPayload {
 
 pub async fn get_user_details(
     State(state): State<AppState>,
-    AuthUser { user_id, .. }: AuthUser,
+    auth: AuthUser,
     doctor: Option<LicensedUser>,
-    Path(user_id_query): Path<Uuid>,
+    Path(user_id): Path<Uuid>,
 ) -> APIResult<Json<UserDetail>> {
-    if user_id_query != user_id && doctor.is_none() {
+    if user_id != auth.user_id && doctor.is_none() {
         return Err(AppError::NotTheSameUser);
     }
 
     let row = sqlx::query!(
         "SELECT user_id, nik, name, dob, gender FROM user_details WHERE \
          user_id = $1",
-        user_id_query
+        user_id
     )
     .fetch_one(&state.db_pool)
     .await
@@ -49,7 +49,7 @@ pub async fn get_user_details(
             DatabaseError::RowNotFound.into()
         }
         e => {
-            error!("Error while setting user_detail for {}: {:?}", user_id, e);
+            error!("Error while querying user_detail for {}: {:?}", user_id, e);
             AppError::InternalError
         }
     })?;

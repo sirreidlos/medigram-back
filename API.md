@@ -75,7 +75,7 @@ Logs in to retrieve authorization information. Please immediately save the `sess
 
 # User Information
 
-## `GET /me` 🔒| `GET /users/{user_id_query}` 🔒/ ⚕️
+## `GET /me` 🔒| `GET /users/{user_id}` 🔒/ ⚕️
 ### Response
 `200 OK`
 ```json
@@ -94,7 +94,7 @@ Logs in to retrieve authorization information. Please immediately save the `sess
 }
 ```
 
-## `GET /me/details` 🔒 | `GET /users/{user_id_query}/details` 🔒/ ⚕️
+## `GET /me/details` 🔒 | `GET /users/{user_id}/details` 🔒/ ⚕️
 ### Response (User data not found)
 This scenario may happen when the user has just registered their email but hasn't proceeded with filling their data (e.g. closing the app after registration)
 
@@ -148,7 +148,7 @@ This scenario may happen when the user has just registered their email but hasn'
 {"message":"allergy added"}
 ```
 
-## `GET /me/allergies` 🔒 | `GET /users/{user_id_query}/allergies` 🔒/ ⚕️
+## `GET /me/allergies` 🔒 | `GET /users/{user_id}/allergies` 🔒/ ⚕️
 ### Response (empty)
 `200 OK`
 ```json
@@ -209,7 +209,7 @@ DELETE /me/allergies/f7769edf-b06b-4749-b6ff-d91efcca8403
 {"message":"Successfully added user measurement"}
 ```
 
-## `GET /me/measurements` 🔒 | `GET /users/{user_id_query}/measurements` 🔒/ ⚕️
+## `GET /me/measurements` 🔒 | `GET /users/{user_id}/measurements` 🔒/ ⚕️
 
 ### Response
 ```json
@@ -314,7 +314,7 @@ Afterwards, the patient signs it with their private key corresponding to the `de
 {"message":"consultation record added"}
 ```
 
-## `GET /me/consultations` 🔒 | `GET /users/{user_id_query}/consultations` 🔒/⚕️
+## `GET /me/consultations` 🔒 | `GET /users/{user_id}/consultations` 🔒/⚕️
 
 ### Response
 `200 OK`
@@ -334,7 +334,7 @@ Afterwards, the patient signs it with their private key corresponding to the `de
 []
 ```
 
-## `GET /users/{user_id_query}/diagnoses/{consultation_id}` 🔒/⚕️
+## `GET /users/{user_id}/diagnoses/{consultation_id}` 🔒/⚕️
 
 ### Request
 ```
@@ -361,7 +361,7 @@ GET /users/41676bb2-8561-47fe-9271-4c7e89defa7c/diagnoses/51df7e84-7d5a-492f-9eb
 {"error":"You are not allowed to request for this"}
 ```
 
-## `GET /users/{user_id_query}/symptoms/{consultation_id}` 🔒/⚕️
+## `GET /users/{user_id}/symptoms/{consultation_id}` 🔒/⚕️
 
 ### Request
 ```
@@ -385,7 +385,7 @@ GET /users/41676bb2-8561-47fe-9271-4c7e89defa7c/51df7e84-7d5a-492f-9eb3-ace107ca
 ]
 ```
 
-## `GET /users/{user_id_query}/prescriptions/{consultation_id}` 🔒/⚕️
+## `GET /users/{user_id}/prescriptions/{consultation_id}` 🔒/⚕️
 
 ### Request
 ```

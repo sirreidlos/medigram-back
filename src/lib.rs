@@ -89,7 +89,7 @@ pub fn app(state: AppState) -> Router {
         .route("/", get(health_check))
         // =================== ALLERGIES ===================
         .route("/me/allergies", get(get_own_allergies))
-        .route("/users/{user_id_query}/allergies", get(get_user_allergies))
+        .route("/users/{user_id}/allergies", get(get_user_allergies))
         .route("/me/allergies", post(add_own_allergy))
         .route("/me/allergies/{allergy_id}", delete(remove_own_allergy))
         // =================== CONSULTATIONS ===================
@@ -99,12 +99,12 @@ pub fn app(state: AppState) -> Router {
             get(get_own_consultation_single),
         )
         .route(
-            "/users/{user_id_query}/consultations",
+            "/users/{user_id}/consultations",
             get(get_user_consultations),
         )
         // is this necessary?
         .route(
-            "/users/{user_id_query}/consultations",
+            "/users/{user_id}/consultations",
             post(add_user_consultation),
         )
         .route(
@@ -112,7 +112,7 @@ pub fn app(state: AppState) -> Router {
             get(get_own_consultations_as_doctor),
         )
         .route(
-            "/doctors/{doctor_id}/users/{user_id_query}/consultations",
+            "/doctors/{doctor_id}/users/{user_id}/consultations",
             get(get_doctor_consultations_with_user),
         )
         .route(
@@ -130,20 +130,17 @@ pub fn app(state: AppState) -> Router {
         // =================== USER INFORMATION ===================
         .route("/doctors/{doctor_id}/profile", get(get_doctor_profile))
         .route(
-            "/users/{user_id_query}/doctor-profile",
+            "/users/{user_id}/doctor-profile",
             get(get_doctor_profile_by_user_id),
         )
         // do we really want this? or should we go with the email approach
         // .route("/doctor-profile", post(set_doctor_profile))
         .route("/me", get(get_own_info))
-        .route("/users/{user_id_query}", get(get_user_info))
+        .route("/users/{user_id}", get(get_user_info))
         .route("/me/details", get(get_own_details))
-        .route("/users/{user_id_query}/details", get(get_user_details))
+        .route("/users/{user_id}/details", get(get_user_details))
         .route("/me/details", put(set_own_details))
-        .route(
-            "/users/{user_id_query}/measurements",
-            get(get_user_measurements),
-        )
+        .route("/users/{user_id}/measurements", get(get_user_measurements))
         .route("/me/measurements", get(get_own_measurements))
         .route("/me/measurements", post(add_own_measurement))
         .route("/me/purchases", get(get_own_purchases))

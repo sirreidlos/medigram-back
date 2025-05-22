@@ -18,18 +18,18 @@ use crate::{
 
 pub async fn get_user_measurements(
     State(state): State<AppState>,
-    AuthUser { user_id, .. }: AuthUser,
+    auth: AuthUser,
     doctor: Option<LicensedUser>,
-    Path(user_id_query): Path<Uuid>,
+    Path(user_id): Path<Uuid>,
 ) -> APIResult<Json<Vec<UserMeasurement>>> {
-    if user_id_query != user_id && doctor.is_none() {
+    if user_id != auth.user_id && doctor.is_none() {
         return Err(AppError::NotTheSameUser);
     }
 
     sqlx::query_as!(
         UserMeasurement,
         "SELECT * FROM user_measurements WHERE user_id = $1",
-        user_id_query
+        user_id
     )
     .fetch_all(&state.db_pool)
     .await
