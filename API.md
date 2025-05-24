@@ -297,7 +297,7 @@ Afterwards, the patient signs it with their private key corresponding to the `de
       "severity": "MILD"
     }
   ],
-  "symptoms": ["runny nose", "coughing"],
+  "symptoms": "runny nose, coughing",
   "prescriptions": [
     {
       "instruction": "Take after meals with a full glass of water."
@@ -357,30 +357,6 @@ GET /users/41676bb2-8561-47fe-9271-4c7e89defa7c/diagnoses/51df7e84-7d5a-492f-9eb
 `403 Forbidden`
 ```json
 {"error":"You are not allowed to request for this"}
-```
-
-## `GET /users/{user_id}/symptoms/{consultation_id}` 🔒/⚕️
-
-### Request
-```
-GET /users/41676bb2-8561-47fe-9271-4c7e89defa7c/51df7e84-7d5a-492f-9eb3-ace107ca66ec
-```
-
-### Response
-`200 OK`
-```json
-[
-  {
-    "symptom_id":"b5a5840d-7168-4471-8fef-121859d472d1",
-    "consultation_id":"51df7e84-7d5a-492f-9eb3-ace107ca66ec",
-    "symptom":"runny nose"
-  },
-  {
-    "symptom_id":"20337e92-f192-4ad0-8a78-391bc1e74d65",
-    "consultation_id":"51df7e84-7d5a-492f-9eb3-ace107ca66ec",
-    "symptom":"coughing"
-  }
-]
 ```
 
 ## `GET /users/{user_id}/prescriptions/{consultation_id}` 🔒/⚕️

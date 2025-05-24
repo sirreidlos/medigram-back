@@ -100,6 +100,7 @@ pub struct Consultation {
     pub consultation_id: Uuid,
     pub doctor_id: Uuid,
     pub user_id: Uuid,
+    pub symptoms: String,
     pub created_at: DateTime<Utc>,
 }
 
@@ -109,13 +110,6 @@ pub struct Diagnosis {
     pub consultation_id: Uuid,
     pub diagnosis: String,
     pub severity: String,
-}
-
-#[derive(Serialize)]
-pub struct Symptom {
-    pub symptom_id: Uuid,
-    pub consultation_id: Uuid,
-    pub symptom: String,
 }
 
 #[derive(Serialize)]

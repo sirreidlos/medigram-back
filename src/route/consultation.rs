@@ -15,7 +15,7 @@ use crate::{
     error::{APIResult, AppError, DatabaseError},
     protocol::{Consent, ConsentError},
     route::verify_consent,
-    schema::{Consultation, Diagnosis, Prescription, Symptom},
+    schema::{Consultation, Diagnosis, Prescription},
 };
 
 pub async fn get_own_consultations(
@@ -163,7 +163,7 @@ pub struct ConsultationPayload {
     consent: Consent,
     user_id: Uuid,
     diagnoses: Vec<DiagnosisPayload>,
-    symptoms: Vec<String>,
+    symptoms: String,
     prescriptions: Vec<PrescriptionPayload>,
 }
 
@@ -195,10 +195,12 @@ pub async fn add_user_consultation(
 
     let consultation = query_as!(
         Consultation,
-        "INSERT INTO consultations (doctor_id, user_id) VALUES ($1, $2) \
-         RETURNING consultation_id, doctor_id, user_id, created_at",
+        "INSERT INTO consultations (doctor_id, user_id, symptoms) VALUES ($1, \
+         $2, $3) RETURNING consultation_id, doctor_id, user_id, symptoms, \
+         created_at",
         doctor_id,
-        user_id
+        user_id,
+        symptoms
     )
     .fetch_one(&mut *tx)
     .await
@@ -219,20 +221,6 @@ pub async fn add_user_consultation(
             consultation.consultation_id,
             diagnosis,
             severity
-        )
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| {
-            error!("Error occured while inserting a diagnosis: {:?}", e);
-            AppError::InternalError
-        })?;
-    }
-
-    for symptom in symptoms {
-        query!(
-            "INSERT INTO symptoms (consultation_id, symptom) VALUES ($1, $2)",
-            consultation.consultation_id,
-            symptom
         )
         .execute(&mut *tx)
         .await
@@ -327,29 +315,6 @@ pub async fn get_consultation_diagnoses(
     .map(Json)
     .map_err(|e| {
         error!("Error occured while fetching for diagnoses: {:?}", e);
-
-        AppError::InternalError
-    })
-}
-
-pub async fn get_consultation_symptoms(
-    State(state): State<AppState>,
-    AuthUser { user_id, .. }: AuthUser,
-    doctor: Option<LicensedUser>,
-    Path(consultation_id): Path<Uuid>,
-) -> APIResult<Json<Vec<Symptom>>> {
-    check_user(user_id, doctor, consultation_id, &state.db_pool).await?;
-
-    query_as!(
-        Symptom,
-        "SELECT * FROM symptoms WHERE consultation_id = $1",
-        consultation_id
-    )
-    .fetch_all(&state.db_pool)
-    .await
-    .map(Json)
-    .map_err(|e| {
-        error!("Error occured while fetching for symptoms: {:?}", e);
 
         AppError::InternalError
     })
