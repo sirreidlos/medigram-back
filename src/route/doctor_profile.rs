@@ -3,7 +3,8 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
-use serde::Deserialize;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sqlx::{query, query_as};
 use tracing::{error, warn};
@@ -22,14 +23,29 @@ pub struct DoctorProfilePayload {
     pub practice_address: String,
 }
 
+#[derive(Serialize)]
+pub struct DoctorProfilePublic {
+    pub doctor_id: Uuid,
+    pub user_id: Uuid,
+    pub practice_permit: String,
+    pub practice_address: String,
+    pub approved: bool,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub name: String,
+}
+
 pub async fn get_doctor_profile(
     State(state): State<AppState>,
     AuthUser { .. }: AuthUser,
     Path(doctor_id): Path<Uuid>,
-) -> APIResult<Json<DoctorProfile>> {
+) -> APIResult<Json<DoctorProfilePublic>> {
     query_as!(
-        DoctorProfile,
-        "SELECT * FROM doctor_profiles WHERE doctor_id = $1",
+        DoctorProfilePublic,
+        "SELECT d.doctor_id, d.user_id, d.practice_permit, \
+         d.practice_address, d.approved, d.approved_at, ud.name
+            FROM doctor_profiles AS d
+            JOIN user_details AS ud ON ud.user_id = d.user_id
+            WHERE doctor_id = $1",
         doctor_id
     )
     .fetch_one(&state.db_pool)
