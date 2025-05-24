@@ -126,3 +126,10 @@ pub struct Prescription {
     pub instruction: String,
     pub purchased_at: Option<DateTime<Utc>>,
 }
+
+#[derive(Serialize)]
+pub struct MedicalCondition {
+    pub condition_id: Uuid,
+    pub user_id: Uuid,
+    pub condition: String,
+}

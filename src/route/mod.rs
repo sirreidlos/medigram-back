@@ -1,6 +1,7 @@
 pub mod allergy;
 pub mod consultation;
 pub mod doctor_profile;
+pub mod medical_condition;
 pub mod purchase;
 pub mod user;
 pub mod user_detail;
