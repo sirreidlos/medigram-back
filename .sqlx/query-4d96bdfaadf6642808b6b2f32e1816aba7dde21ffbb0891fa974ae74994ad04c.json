@@ -17,6 +17,11 @@
         "ordinal": 2,
         "name": "instruction",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "purchased_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -27,7 +32,8 @@
     "nullable": [
       false,
       false,
-      false
+      false,
+      true
     ]
   },
   "hash": "4d96bdfaadf6642808b6b2f32e1816aba7dde21ffbb0891fa974ae74994ad04c"

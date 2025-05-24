@@ -124,4 +124,5 @@ pub struct Prescription {
     pub prescription_id: Uuid,
     pub consultation_id: Uuid,
     pub instruction: String,
+    pub purchased_at: Option<DateTime<Utc>>,
 }
