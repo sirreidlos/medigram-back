@@ -150,7 +150,6 @@ pub async fn get_doctor_consultations_with_user(
 #[derive(Deserialize)]
 pub struct DiagnosisPayload {
     diagnosis: String,
-    icd_code: String,
     severity: String,
 }
 
@@ -211,16 +210,14 @@ pub async fn add_user_consultation(
     for diagnosis in diagnoses {
         let DiagnosisPayload {
             diagnosis,
-            icd_code,
             severity,
         } = diagnosis;
 
         query!(
-            "INSERT INTO diagnoses (consultation_id, diagnosis, icd_code, \
-             severity) VALUES ($1, $2, $3, $4)",
+            "INSERT INTO diagnoses (consultation_id, diagnosis, severity) \
+             VALUES ($1, $2, $3)",
             consultation.consultation_id,
             diagnosis,
-            icd_code,
             severity
         )
         .execute(&mut *tx)

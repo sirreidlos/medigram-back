@@ -108,7 +108,6 @@ pub struct Diagnosis {
     pub diagnosis_id: Uuid,
     pub consultation_id: Uuid,
     pub diagnosis: String,
-    pub icd_code: String,
     pub severity: String,
 }
 

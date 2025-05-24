@@ -294,7 +294,6 @@ Afterwards, the patient signs it with their private key corresponding to the `de
   "diagnoses": [
     {
       "diagnosis": "Common Cold",
-      "icd_code": "J00",
       "severity": "MILD"
     }
   ],
@@ -349,7 +348,6 @@ GET /users/41676bb2-8561-47fe-9271-4c7e89defa7c/diagnoses/51df7e84-7d5a-492f-9eb
     "diagnosis_id":"f9077ba9-b329-4dbd-926e-4f574ccaf9f5",
     "consultation_id":"51df7e84-7d5a-492f-9eb3-ace107ca66ec",
     "diagnosis":"Common Cold",
-    "icd_code":"J00",
     "severity":"MILD"
   }
 ]
