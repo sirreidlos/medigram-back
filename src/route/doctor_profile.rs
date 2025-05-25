@@ -68,12 +68,16 @@ pub async fn get_doctor_profile(
 
 pub async fn get_doctor_profile_by_user_id(
     State(state): State<AppState>,
-    auth: AuthUser,
+    _: AuthUser,
     Path(user_id): Path<Uuid>,
-) -> APIResult<Json<DoctorProfile>> {
+) -> APIResult<Json<DoctorProfilePublic>> {
     query_as!(
-        DoctorProfile,
-        "SELECT * FROM doctor_profiles WHERE user_id = $1",
+        DoctorProfilePublic,
+        "SELECT d.doctor_id, d.user_id, d.practice_permit, \
+         d.practice_address, d.approved, d.approved_at, ud.name
+            FROM doctor_profiles AS d
+            JOIN user_details AS ud ON ud.user_id = d.user_id
+            WHERE d.user_id = $1",
         user_id
     )
     .fetch_one(&state.db_pool)
