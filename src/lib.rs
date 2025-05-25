@@ -33,7 +33,7 @@ use route::{
         add_user_consultation, get_consultation_diagnoses,
         get_consultation_prescriptions, get_doctor_consultations_with_user,
         get_own_consultation_single, get_own_consultations,
-        get_own_consultations_as_doctor, get_user_consultations,
+        get_own_consultations_as_doctor, get_user_consultations, set_reminder,
     },
     doctor_profile::{get_doctor_profile, get_doctor_profile_by_user_id},
     medical_condition::{
@@ -125,6 +125,10 @@ pub fn app(state: AppState) -> Router {
         .route(
             "/consultations/{consultation_id}/prescriptions",
             get(get_consultation_prescriptions),
+        )
+        .route(
+            "/consultations/{consultation_id}/reminder",
+            put(set_reminder),
         )
         // =================== USER INFORMATION ===================
         .route("/doctors/{doctor_id}/profile", get(get_doctor_profile))

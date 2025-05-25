@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE consultations\n         SET reminded = true\n         WHERE consultation_id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f74ac94964f4c949dc8805ea433ed5ef165e69b5bbf20942be9b113a2a6c2818"
+}

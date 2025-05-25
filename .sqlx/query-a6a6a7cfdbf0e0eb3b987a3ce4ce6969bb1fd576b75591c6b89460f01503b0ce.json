@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO medical_conditions (user_id, condition) VALUES ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a6a6a7cfdbf0e0eb3b987a3ce4ce6969bb1fd576b75591c6b89460f01503b0ce"
+}

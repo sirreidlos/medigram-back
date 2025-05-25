@@ -27,6 +27,11 @@
         "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "reminded",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -36,6 +41,7 @@
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,

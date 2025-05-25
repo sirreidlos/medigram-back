@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM medical_conditions WHERE condition_id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bbf13e6e9c3764966dbf629ef1d2a20bfa49d47c99ef75fbb02bf1af8cbad321"
+}

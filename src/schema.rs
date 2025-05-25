@@ -102,6 +102,7 @@ pub struct Consultation {
     pub user_id: Uuid,
     pub symptoms: String,
     pub created_at: DateTime<Utc>,
+    pub reminded: bool,
 }
 
 #[derive(Serialize)]

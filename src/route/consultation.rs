@@ -197,7 +197,7 @@ pub async fn add_user_consultation(
         Consultation,
         "INSERT INTO consultations (doctor_id, user_id, symptoms) VALUES ($1, \
          $2, $3) RETURNING consultation_id, doctor_id, user_id, symptoms, \
-         created_at",
+         created_at, reminded",
         doctor_id,
         user_id,
         symptoms
@@ -341,4 +341,34 @@ pub async fn get_consultation_prescriptions(
 
         AppError::InternalError
     })
+}
+
+pub async fn set_reminder(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+    Path(consultation_id): Path<Uuid>,
+) -> APIResult<(StatusCode, Json<Value>)> {
+    let query_res: sqlx::postgres::PgQueryResult = query!(
+        "UPDATE consultations
+         SET reminded = true
+         WHERE consultation_id = $1 AND user_id = $2",
+        consultation_id,
+        user_id
+    )
+    .execute(&state.db_pool)
+    .await
+    .map_err(|e| {
+        error!(
+            "Error while updating `reminded` for consultation {} for {}: {:?}",
+            consultation_id, user_id, e
+        );
+        AppError::InternalError
+    })?;
+
+    if query_res.rows_affected() == 0 {
+        // assume it doesnt exist
+        return Err(DatabaseError::RowNotFound.into());
+    }
+
+    Ok((StatusCode::OK, Json(json!({ "message": "reminded" }))))
 }
