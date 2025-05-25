@@ -1,8 +1,11 @@
 use axum::{
     Json,
     extract::{Path, State},
+    http::StatusCode,
 };
-use sqlx::query_as;
+use serde::Deserialize;
+use serde_json::{Value, json};
+use sqlx::{query, query_as};
 use tracing::error;
 use uuid::Uuid;
 
@@ -59,4 +62,68 @@ pub async fn get_own_conditions(
             AppError::InternalError
         }
     })
+}
+
+#[derive(Deserialize)]
+pub struct MedicalConditionPayload {
+    pub condition: String,
+}
+
+pub async fn post_own_conditions(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+    Json(MedicalConditionPayload { condition }): Json<MedicalConditionPayload>,
+) -> APIResult<(StatusCode, Json<Value>)> {
+    let _ = query!(
+        "INSERT INTO medical_conditions (user_id, condition) VALUES ($1, $2)",
+        user_id,
+        condition
+    )
+    .execute(&state.db_pool)
+    .await
+    .map(Json)
+    .map_err(|e| {
+        error!(
+            "Error while adding medical condition for {}: {:?}",
+            user_id, e
+        );
+        AppError::InternalError
+    })?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(json!({ "message": "medical condition added" })),
+    ))
+}
+
+pub async fn delete_own_conditions(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+    Path(condition_id): Path<Uuid>,
+) -> APIResult<(StatusCode, Json<Value>)> {
+    let query_res: sqlx::postgres::PgQueryResult = query!(
+        "DELETE FROM medical_conditions WHERE condition_id = $1 AND user_id = \
+         $2",
+        condition_id,
+        user_id
+    )
+    .execute(&state.db_pool)
+    .await
+    .map_err(|e| {
+        error!(
+            "Error while removing medical condition {} for {}: {:?}",
+            condition_id, user_id, e
+        );
+        AppError::InternalError
+    })?;
+
+    if query_res.rows_affected() == 0 {
+        // assume it doesnt exist
+        return Err(DatabaseError::RowNotFound.into());
+    }
+
+    Ok((
+        StatusCode::OK,
+        Json(json!({ "message": "medical condition removed" })),
+    ))
 }

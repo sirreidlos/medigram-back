@@ -36,7 +36,10 @@ use route::{
         get_own_consultations_as_doctor, get_user_consultations,
     },
     doctor_profile::{get_doctor_profile, get_doctor_profile_by_user_id},
-    medical_condition::{get_own_conditions, get_user_conditions},
+    medical_condition::{
+        delete_own_conditions, get_own_conditions, get_user_conditions,
+        post_own_conditions,
+    },
     purchase::{add_own_purchase, get_own_purchases},
     request_nonce,
     user::{get_own_info, get_user_info},
@@ -141,7 +144,13 @@ pub fn app(state: AppState) -> Router {
         .route("/me/measurements", post(add_own_measurement))
         .route("/me/purchases", get(get_own_purchases))
         .route("/me/purchases", post(add_own_purchase))
+        // =================== MEDICAL CONDITIONS ===================
         .route("/me/medical-conditions", get(get_own_conditions))
+        .route("/me/medical-conditions", post(post_own_conditions))
+        .route(
+            "/me/medical-conditions/{condition_id}",
+            delete(delete_own_conditions),
+        )
         .route(
             "/users/{user_id}/medical-conditions",
             get(get_user_conditions),
