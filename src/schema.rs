@@ -117,6 +117,10 @@ pub struct Diagnosis {
 pub struct Prescription {
     pub prescription_id: Uuid,
     pub consultation_id: Uuid,
+    pub drug_name: String,
+    pub doses_in_mg: f64,
+    pub regimen_per_day: f64,
+    pub quantity_per_dose: f64,
     pub instruction: String,
     pub purchased_at: Option<DateTime<Utc>>,
 }

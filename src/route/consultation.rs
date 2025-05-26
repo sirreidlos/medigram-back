@@ -155,6 +155,10 @@ pub struct DiagnosisPayload {
 
 #[derive(Deserialize)]
 pub struct PrescriptionPayload {
+    drug_name: String,
+    doses_in_mg: f64,
+    regimen_per_day: f64,
+    quantity_per_dose: f64,
     instruction: String,
 }
 
@@ -231,13 +235,24 @@ pub async fn add_user_consultation(
     }
 
     for prescription in prescriptions {
-        let PrescriptionPayload { instruction } = prescription;
+        let PrescriptionPayload {
+            drug_name,
+            doses_in_mg,
+            regimen_per_day,
+            quantity_per_dose,
+            instruction,
+        } = prescription;
 
         query!(
-            "INSERT INTO prescriptions (consultation_id, instruction) VALUES \
-             ($1, $2)",
+            "INSERT INTO prescriptions (consultation_id, drug_name, \
+             doses_in_mg, regimen_per_day, quantity_per_dose, instruction) \
+             VALUES ($1, $2, $3, $4, $5, $6)",
             consultation.consultation_id,
-            instruction
+            drug_name,
+            doses_in_mg,
+            regimen_per_day,
+            quantity_per_dose,
+            instruction,
         )
         .execute(&mut *tx)
         .await

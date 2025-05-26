@@ -34,20 +34,37 @@ async fn add_consultations_non_doctor(db_pool: Pool<Postgres>) {
         // even with a fake but parsable payload this should fail at the doctor
         // check anyway
         .body(Body::from(
-            json!({
-                "consent": {
-                    "signer_device_id": "b896cff8-de47-451c-96c1-74086c86b9e7",
-                    "nonce": "XjMOZe0G6cUndk4U",
-                    "signature": "pCNjNI7vsUhP0TEfinN+NFOTEYLsexyVnawHx8Fx+x5VIhPho2/psGS9Ng96WGdO9mc8cNiK15Pg8KXVHdGuDQ=="
+            json!(
+            {
+              "consent": {
+                "signer_device_id": "b896cff8-de47-451c-96c1-74086c86b9e7",
+                "nonce": "XjMOZe0G6cUndk4U",
+                "signature": "pCNjNI7vsUhP0TEfinN+NFOTEYLsexyVnawHx8Fx+x5VIhPho2/psGS9Ng96WGdO9mc8cNiK15Pg8KXVHdGuDQ=="
+              },
+              "user_id": "41676bb2-8561-47fe-9271-4c7e89defa7c",
+              "diagnoses": [
+                {
+                  "diagnosis": "Common Cold",
+                  "severity": "MILD"
+                }
+              ],
+              "symptoms": "runny nose, coughing",
+              "prescriptions": [
+                {
+                  "drug_name": "panadol",
+                  "doses_in_mg": 100,
+                  "regimen_per_day": 3,
+                  "quantity_per_dose": 21,
+                  "instruction": "Take after meals with a full glass of water."
                 },
-                "user_id": "41676bb2-8561-47fe-9271-4c7e89defa7c",
-                "diagnoses": [
-                    { "diagnosis": "Common Cold", "severity": "MILD" }
-                ],
-                "symptoms": "runny nose, coughing",
-                "prescriptions": [
-                    { "instruction": "Take after meals with a full glass of water." }
-                ]
+                {
+                  "drug_name": "panadol",
+                  "doses_in_mg": 100,
+                  "regimen_per_day": 3,
+                  "quantity_per_dose": 21,
+                  "instruction": "Take after meals with a full glass of water."
+                }
+              ]
             }).to_string(),
         ))
         .unwrap();
@@ -73,24 +90,35 @@ async fn add_consultations_invalid_nonce(db_pool: Pool<Postgres>) {
         .header("Authorization", format!("Bearer {session_id}"))
         .body(Body::from(
             json!({
-                "consent": {
-                    "signer_device_id": "862f034f-c705-48ff-bd0e-3a239c6c575e",
-                    "nonce": "XjMOZe0G6cUndk4U",
-                    "signature": "lzfJ8534rZ2f4m0CMdxE5T0emdiV3AERgxYk1q7NGUz+leM/7rgzCyVXCjjXBc8cX4P236h1bjEJ0w7oHVPzCg=="
+              "consent": {
+                "signer_device_id": "862f034f-c705-48ff-bd0e-3a239c6c575e",
+                "nonce": "XjMOZe0G6cUndk4U",
+                "signature": "lzfJ8534rZ2f4m0CMdxE5T0emdiV3AERgxYk1q7NGUz+leM/7rgzCyVXCjjXBc8cX4P236h1bjEJ0w7oHVPzCg=="
+              },
+              "user_id": "41676bb2-8561-47fe-9271-4c7e89defa7c",
+              "diagnoses": [
+                {
+                  "diagnosis": "Common Cold",
+                  "severity": "MILD"
+                }
+              ],
+              "symptoms": "runny nose, coughing",
+              "prescriptions": [
+                {
+                  "drug_name": "panadol",
+                  "doses_in_mg": 100,
+                  "regimen_per_day": 3,
+                  "quantity_per_dose": 21,
+                  "instruction": "Take after meals with a full glass of water."
                 },
-                "user_id": "41676bb2-8561-47fe-9271-4c7e89defa7c",
-                "diagnoses": [
-                    {
-                        "diagnosis": "Common Cold",
-                        "severity": "MILD"
-                    }
-                ],
-                "symptoms": "runny nose, coughing",
-                "prescriptions": [
-                    {
-                        "instruction": "Take after meals with a full glass of water."
-                    }
-                ]
+                {
+                  "drug_name": "panadol",
+                  "doses_in_mg": 100,
+                  "regimen_per_day": 3,
+                  "quantity_per_dose": 21,
+                  "instruction": "Take after meals with a full glass of water."
+                }
+              ]
             }).to_string(),
         ))
         .unwrap();
@@ -131,26 +159,38 @@ async fn add_consultations_no_device(db_pool: Pool<Postgres>) {
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
         .body(Body::from(
-            json!({
-                    "consent": {
+            json!(
+                    {
+                      "consent": {
                         "signer_device_id": "862f034f-c705-48ff-bd0e-3a239c6c575e",
                         "nonce": nonce,
                         "signature": "lzfJ8534rZ2f4m0CMdxE5T0emdiV3AERgxYk1q7NGUz+leM/7rgzCyVXCjjXBc8cX4P236h1bjEJ0w7oHVPzCg=="
-                    },
-                    "user_id": "41676bb2-8561-47fe-9271-4c7e89defa7c",
-                    "diagnoses": [
+                      },
+                      "user_id": "41676bb2-8561-47fe-9271-4c7e89defa7c",
+                      "diagnoses": [
                         {
-                            "diagnosis": "Common Cold",
-                            "severity": "MILD"
+                          "diagnosis": "Common Cold",
+                          "severity": "MILD"
                         }
-                    ],
-                    "symptoms": "runny nose, coughing",
-                    "prescriptions": [
+                      ],
+                      "symptoms": "runny nose, coughing",
+                      "prescriptions": [
                         {
-                            "instruction": "Take after meals with a full glass of water."
+                          "drug_name": "panadol",
+                          "doses_in_mg": 100,
+                          "regimen_per_day": 3,
+                          "quantity_per_dose": 21,
+                          "instruction": "Take after meals with a full glass of water."
+                        },
+                        {
+                          "drug_name": "panadol",
+                          "doses_in_mg": 100,
+                          "regimen_per_day": 3,
+                          "quantity_per_dose": 21,
+                          "instruction": "Take after meals with a full glass of water."
                         }
-                    ]
-                })
+                      ]
+                    }            )
             .to_string(),
         ))
         .unwrap();

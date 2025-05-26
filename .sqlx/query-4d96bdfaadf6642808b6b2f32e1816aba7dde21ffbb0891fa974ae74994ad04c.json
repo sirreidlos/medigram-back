@@ -15,11 +15,31 @@
       },
       {
         "ordinal": 2,
-        "name": "instruction",
+        "name": "drug_name",
         "type_info": "Text"
       },
       {
         "ordinal": 3,
+        "name": "doses_in_mg",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 4,
+        "name": "regimen_per_day",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "quantity_per_dose",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 6,
+        "name": "instruction",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
         "name": "purchased_at",
         "type_info": "Timestamptz"
       }
@@ -30,6 +50,10 @@
       ]
     },
     "nullable": [
+      false,
+      false,
+      false,
+      false,
       false,
       false,
       false,
