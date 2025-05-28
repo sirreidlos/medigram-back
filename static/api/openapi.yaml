@@ -80,8 +80,10 @@ paths:
               properties:
                 email:
                   type: string
+                  example: "alice@example.com"
                 password:
                   type: string
+                  example: "test"
       responses:
         '200':
           description: Successful login
@@ -112,6 +114,7 @@ paths:
         content:
           application/json:
             schema:
+              required: [device_id]
               type: object
               properties:
                 device_id:
@@ -193,6 +196,11 @@ paths:
                   format: digit16
                   pattern: '^\d{16}$'
                   example: 1000000000000000
+                  description: |
+                    This is actually an integer of 16 digits. Always pass it as
+                    an integer, as passing it as a string would not work.
+                    If it's 16 digits of 9s, JavaScript will (most likely)
+                    render it as 100_000_000_000_000_000, so be aware
                 name:
                   type: string
                   example: Alice
@@ -965,6 +973,11 @@ components:
           format: digit16
           pattern: '^\d{16}$'
           example: 1000000000000000
+          description: |
+            This is actually an integer of 16 digits. Always pass it as
+            an integer, as passing it as a string would not work.
+            If it's 16 digits of 9s, JavaScript will (most likely)
+            render it as 100_000_000_000_000_000, so be aware
         name:
           type: string
           example: "Alice"
@@ -1125,7 +1138,7 @@ components:
         user_id:
           type: string
           format: uuid
-
+        
     Diagnosis:
       type: object
       properties:
@@ -1140,7 +1153,7 @@ components:
         severity:
           type: string
           enum: [MILD, MODERATE, SEVERE]
-
+          
     Prescription:
       type: object
       properties:
@@ -1154,13 +1167,20 @@ components:
           type: string
         doses_in_mg:
           type: number
+          format: double
         regimen_per_day:
-          type: integer
+          type: number
+          format: double
         quantity_per_dose:
-          type: integer
+          type: number
+          format: double
         instruction:
           type: string
-
+        purchased_at:
+          type: string
+          format: date-time
+          nullable: true
+          
     NonceResponse:
       type: object
       properties:
@@ -1169,20 +1189,19 @@ components:
           format: date-time
         nonce:
           type: string
-
+          
     Consent:
       type: object
+      required: [signer_device_id, nonce, signature]
       properties:
         signer_device_id:
           type: string
           format: uuid
         nonce:
-          type: array
-          items:
-            type: integer
+          type: string
         signature:
           type: string
-
+          
     CreateConsultationRequest:
       type: object
       required: [consent, user_id, diagnoses, symptoms, prescriptions]
@@ -1209,7 +1228,23 @@ components:
           type: array
           items:
             type: object
-            required: [instruction]
+            required: 
+              - drug_name
+              - doses_in_mg
+              - regimen_per_day
+              - quantity_per_dose
+              - instruction
             properties:
+              drug_name:
+                type: string
+              doses_in_mg:
+                type: number
+                format: double
+              regimen_per_day:
+                type: number
+                format: double
+              quantity_per_dose:
+                type: number
+                format: double
               instruction:
                 type: string
