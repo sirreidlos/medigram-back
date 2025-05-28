@@ -1,16 +1,16 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT d.doctor_id, d.user_id, d.practice_permit, d.practice_address, d.approved, d.approved_at, ud.name\n            FROM doctor_profiles AS d\n            JOIN user_details AS ud ON ud.user_id = d.user_id\n            WHERE d.user_id = $1",
+  "query": "SELECT * FROM doctor_practice_locations WHERE doctor_id = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "doctor_id",
+        "name": "location_id",
         "type_info": "Uuid"
       },
       {
         "ordinal": 1,
-        "name": "user_id",
+        "name": "doctor_id",
         "type_info": "Uuid"
       },
       {
@@ -25,18 +25,13 @@
       },
       {
         "ordinal": 4,
-        "name": "approved",
-        "type_info": "Bool"
-      },
-      {
-        "ordinal": 5,
         "name": "approved_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
-        "name": "name",
-        "type_info": "Text"
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -49,10 +44,9 @@
       false,
       false,
       false,
-      false,
       true,
       false
     ]
   },
-  "hash": "fffb89c23cb27a8b1a197615282e0022f6a28463743b0749801c7b3b377e5a04"
+  "hash": "375fb4ca9f681d1b1f97647dd8055cd774787f70df4aadfedfa464fee1447881"
 }

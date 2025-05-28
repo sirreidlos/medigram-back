@@ -145,6 +145,7 @@ pub struct LicensedUser {
     pub doctor_id: Uuid,
 }
 
+// TODO rewrite this to not be optional
 impl<S> OptionalFromRequestParts<S> for LicensedUser
 where
     S: Send + Sync,
@@ -181,9 +182,11 @@ where
             }
         };
 
-        if doctor_profile.approved_at.is_none() {
-            return Ok(None);
-        }
+        // doctor profile is ONLY created when they have at least 1 permit
+        // approved
+        // if doctor_profile.approved_at.is_none() {
+        //     return Ok(None);
+        // }
 
         let doctor_id = doctor_profile.doctor_id;
 
