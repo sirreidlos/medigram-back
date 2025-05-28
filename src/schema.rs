@@ -38,10 +38,17 @@ pub struct UserMeasurement {
 pub struct DoctorProfile {
     pub doctor_id: Uuid,
     pub user_id: Uuid,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Serialize)]
+pub struct DoctorPracticeLocation {
+    pub location_id: Uuid,
+    pub doctor_id: Uuid,
     pub practice_permit: String,
     pub practice_address: String,
-    pub approved: bool,
     pub approved_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::Type)]
