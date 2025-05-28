@@ -21,6 +21,7 @@ use sqlx::Pool;
 use sqlx::postgres::Postgres;
 use tower_http::{
     cors::{Any, CorsLayer},
+    services::ServeDir,
     trace::TraceLayer,
 };
 
@@ -164,6 +165,8 @@ pub fn app(state: AppState) -> Router {
         .route("/register", post(auth::email::register))
         .route("/logout", post(auth::logout))
         .route("/request-nonce", get(request_nonce))
+        // =================== STATIC FOR DOCS ===================
+        .nest_service("/static/api", ServeDir::new("./static/api"))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)
