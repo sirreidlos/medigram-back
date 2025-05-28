@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO consultations (doctor_id, user_id, symptoms) VALUES ($1, $2, $3) RETURNING consultation_id, doctor_id, user_id, symptoms, created_at, reminded",
+  "query": "INSERT INTO consultations (doctor_id, user_id, location_id, symptoms) VALUES ($1, $2, $3, $4) RETURNING consultation_id, doctor_id, user_id, location_id, symptoms, created_at, reminded",
   "describe": {
     "columns": [
       {
@@ -20,22 +20,28 @@
       },
       {
         "ordinal": 3,
+        "name": "location_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
         "name": "symptoms",
         "type_info": "Text"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "reminded",
         "type_info": "Bool"
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid",
         "Uuid",
         "Text"
@@ -47,8 +53,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "cb544675e24cece2a0174fbf010258be2f9cc8dddaacb93dd72aff09909315bc"
+  "hash": "74381ce0d2767899ab568b909e3b7620013bed46d92ec424ac1b50bc371767a6"
 }

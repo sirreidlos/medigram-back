@@ -20,16 +20,21 @@
       },
       {
         "ordinal": 3,
+        "name": "location_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
         "name": "symptoms",
         "type_info": "Text"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "reminded",
         "type_info": "Bool"
       }
@@ -40,6 +45,7 @@
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,

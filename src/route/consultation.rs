@@ -6,7 +6,7 @@ use axum::{
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::{Pool, Postgres, Transaction, query, query_as};
-use tracing::error;
+use tracing::{error, warn};
 use uuid::Uuid;
 
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
     error::{APIResult, AppError, DatabaseError},
     protocol::{Consent, ConsentError},
     route::verify_consent,
-    schema::{Consultation, Diagnosis, Prescription},
+    schema::{Consultation, Diagnosis, DoctorPracticeLocation, Prescription},
 };
 
 pub async fn get_own_consultations(
@@ -166,6 +166,7 @@ pub struct PrescriptionPayload {
 pub struct ConsultationPayload {
     consent: Consent,
     user_id: Uuid,
+    location_id: Uuid,
     diagnoses: Vec<DiagnosisPayload>,
     symptoms: String,
     prescriptions: Vec<PrescriptionPayload>,
@@ -178,6 +179,7 @@ pub async fn add_user_consultation(
     Json(ConsultationPayload {
         consent,
         user_id: _user_id,
+        location_id,
         diagnoses,
         symptoms,
         prescriptions,
@@ -187,6 +189,32 @@ pub async fn add_user_consultation(
         return Err(ConsentError::NotLicensed.into());
     }
     let doctor_id = doctor.unwrap().doctor_id;
+    let location_query: DoctorPracticeLocation = query_as!(
+        DoctorPracticeLocation,
+        "SELECT * FROM doctor_practice_locations WHERE doctor_id = $1 AND \
+         location_id = $2",
+        doctor_id,
+        location_id
+    )
+    .fetch_one(&state.db_pool)
+    .await
+    .map_err(|e| match e {
+        sqlx::Error::RowNotFound => {
+            warn!(
+                "Row not found for doctor {} and location {}",
+                doctor_id, location_id
+            );
+            DatabaseError::RowNotFound.into()
+        }
+        _ => {
+            error!(
+                "Error occured while retrieving location {} for doctor {}: \
+                 {:?}",
+                location_id, doctor_id, e
+            );
+            AppError::InternalError
+        }
+    })?;
 
     verify_consent(consent, user_id, &state.db_pool, &state.nonce_cache)
         .await?;
@@ -199,11 +227,12 @@ pub async fn add_user_consultation(
 
     let consultation = query_as!(
         Consultation,
-        "INSERT INTO consultations (doctor_id, user_id, symptoms) VALUES ($1, \
-         $2, $3) RETURNING consultation_id, doctor_id, user_id, symptoms, \
-         created_at, reminded",
+        "INSERT INTO consultations (doctor_id, user_id, location_id, \
+         symptoms) VALUES ($1, $2, $3, $4) RETURNING consultation_id, \
+         doctor_id, user_id, location_id, symptoms, created_at, reminded",
         doctor_id,
         user_id,
+        location_id,
         symptoms
     )
     .fetch_one(&mut *tx)

@@ -1204,11 +1204,14 @@ components:
           
     CreateConsultationRequest:
       type: object
-      required: [consent, user_id, diagnoses, symptoms, prescriptions]
+      required: [consent, user_id, location_id, diagnoses, symptoms, prescriptions]
       properties:
         consent:
           $ref: '#/components/schemas/Consent'
         user_id:
+          type: string
+          format: uuid
+        location_id:
           type: string
           format: uuid
         diagnoses:

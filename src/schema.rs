@@ -107,6 +107,7 @@ pub struct Consultation {
     pub consultation_id: Uuid,
     pub doctor_id: Uuid,
     pub user_id: Uuid,
+    pub location_id: Uuid,
     pub symptoms: String,
     pub created_at: DateTime<Utc>,
     pub reminded: bool,
