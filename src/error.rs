@@ -26,6 +26,10 @@ pub enum AppError {
     ///
     /// Returns `StatusCode::FORBIDDEN`
     NotLicensed,
+    /// Error for using a non-approved location
+    ///
+    /// Returns `StatusCode::FORBIDDEN`
+    LocationNotApproved,
 }
 
 // actual decoration trait check
@@ -55,6 +59,9 @@ impl IntoResponse for AppError {
             ),
             AppError::NotLicensed => {
                 (StatusCode::FORBIDDEN, "You are not a licensed practitioner")
+            }
+            AppError::LocationNotApproved => {
+                (StatusCode::FORBIDDEN, "This location is not approved")
             }
         };
 

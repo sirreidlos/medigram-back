@@ -217,6 +217,10 @@ pub async fn add_user_consultation(
         }
     })?;
 
+    if location_query.approved_at.is_none() {
+        return Err(AppError::LocationNotApproved);
+    }
+
     verify_consent(consent, user_id, &state.db_pool, &state.nonce_cache)
         .await?;
 

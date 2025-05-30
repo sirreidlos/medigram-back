@@ -837,6 +837,16 @@ paths:
             application/json:
               example:
                 message: consultation record added
+        '403':
+          description: This location is not approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: This location is not approved
 
   /doctor/consultations:
     get:
