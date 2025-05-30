@@ -1199,6 +1199,16 @@ components:
         user_id:
           type: string
           format: uuid
+        location_id:
+          type: string
+          format: uuid
+        symptoms:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        reminded:
+          type: boolean
         
     Diagnosis:
       type: object
