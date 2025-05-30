@@ -737,6 +737,35 @@ paths:
               example:
                 message: Not licensed  
 
+  /doctor/practice-location/{location_id}:
+    delete:
+      tags:
+        - doctors
+      summary: 🔒 Remove a practice address
+      security:
+        - PractitionerAuth: []
+      parameters:
+        - name: location_id
+          in: path
+          description: Location ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Location removed successfully
+          content:
+            application/json:
+              example:
+                message: Successfully deleted practice location with id {location_id}
+        '404':
+          description: Location tied to doctor not found
+          content:
+            application/json:
+              example:
+                error: Row does not exist in the database
+
   # =================== CONSULTATIONS ===================
   /me/consultations:
     get:

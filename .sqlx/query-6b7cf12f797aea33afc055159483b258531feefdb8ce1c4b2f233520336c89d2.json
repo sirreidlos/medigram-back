@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM doctor_practice_locations WHERE location_id = $1 AND doctor_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6b7cf12f797aea33afc055159483b258531feefdb8ce1c4b2f233520336c89d2"
+}

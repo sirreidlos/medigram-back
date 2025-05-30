@@ -248,3 +248,37 @@ pub async fn add_doctor_practice_location(
         Json(json!({ "message": "Successfully submitted a practice address" })),
     ))
 }
+
+pub async fn delete_doctor_practice_location(
+    State(state): State<AppState>,
+    doctor: LicensedUser,
+    Path(location_id): Path<Uuid>,
+) -> APIResult<(StatusCode, Json<Value>)> {
+    let res = query!(
+        "DELETE FROM doctor_practice_locations WHERE location_id = $1 AND \
+         doctor_id = $2",
+        location_id,
+        doctor.doctor_id,
+    )
+    .execute(&state.db_pool)
+    .await
+    .map_err(|e| {
+        error!(
+            "Error while deleting a practice address {} for {}: {}",
+            location_id, doctor.doctor_id, e
+        );
+
+        AppError::InternalError
+    })?;
+
+    if res.rows_affected() == 0 {
+        return Err(DatabaseError::RowNotFound.into());
+    }
+
+    Ok((
+        StatusCode::OK,
+        Json(
+            json!({ "message": format!("Successfully deleted practice location with id {}", location_id) }),
+        ),
+    ))
+}

@@ -38,8 +38,8 @@ use route::{
         set_prescriptions_purchased_at, set_reminder,
     },
     doctor_profile::{
-        add_doctor_practice_location, get_doctor_profile,
-        get_doctor_profile_by_user_id, set_doctor_profile,
+        add_doctor_practice_location, delete_doctor_practice_location,
+        get_doctor_profile, get_doctor_profile_by_user_id, set_doctor_profile,
     },
     medical_condition::{
         delete_own_conditions, get_own_conditions, get_user_conditions,
@@ -160,6 +160,10 @@ pub fn app(state: AppState) -> Router {
         .route(
             "/doctor/practice-location",
             post(add_doctor_practice_location),
+        )
+        .route(
+            "/doctor/practice-location/{location_id}",
+            delete(delete_doctor_practice_location),
         )
         // =================== MEDICAL CONDITIONS ===================
         .route("/me/medical-conditions", get(get_own_conditions))
