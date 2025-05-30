@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
+use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::{Pool, Postgres, Transaction, query, query_as};
@@ -385,6 +386,68 @@ pub async fn get_consultation_prescriptions(
 
         AppError::InternalError
     })
+}
+
+#[derive(Deserialize)]
+pub struct PrescriptionPurchasedAt {
+    purchased_at: DateTime<Utc>,
+}
+
+pub async fn set_prescriptions_purchased_at(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+    Path(prescription_id): Path<Uuid>,
+    Json(PrescriptionPurchasedAt { purchased_at }): Json<
+        PrescriptionPurchasedAt,
+    >,
+) -> APIResult<(StatusCode, Json<Value>)> {
+    let record = query!(
+        "SELECT u.user_id FROM users as u
+         JOIN consultations AS c ON c.user_id = u.user_id
+         JOIN prescriptions AS p ON p.consultation_id = c.consultation_id
+         WHERE p.prescription_id = $1",
+        prescription_id
+    )
+    .fetch_optional(&state.db_pool)
+    .await
+    .map_err(|e| {
+        error!(
+            "Error while checking for prescription {} user {}: {}",
+            prescription_id, user_id, e
+        );
+
+        AppError::InternalError
+    })?;
+
+    let Some(record) = record else {
+        return Err(DatabaseError::RowNotFound.into());
+    };
+
+    if record.user_id != user_id {
+        return Err(AppError::NotTheSameUser);
+    }
+
+    query!(
+        "UPDATE prescriptions
+         SET purchased_at = $1
+         WHERE prescription_id = $2",
+        purchased_at,
+        prescription_id
+    )
+    .execute(&state.db_pool)
+    .await
+    .map_err(|e| {
+        error!(
+            "Failed to update purchased_at for prescription {}: {}",
+            prescription_id, e
+        );
+        AppError::InternalError
+    })?;
+
+    Ok((
+        StatusCode::OK,
+        Json(json!({ "message": "Prescription marked as purchased" })),
+    ))
 }
 
 pub async fn set_reminder(

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT u.user_id FROM users as u\n         JOIN consultations AS c ON c.user_id = u.user_id\n         JOIN prescriptions AS p ON p.consultation_id = c.consultation_id\n         WHERE p.prescription_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4f61f3248a3d3edce52377a5bbbd7f9febf8aa2b2091f29ce094d6ecbacd969d"
+}

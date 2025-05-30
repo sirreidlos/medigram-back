@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE prescriptions\n         SET purchased_at = $1\n         WHERE prescription_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0f4285ac1f87de58a747966d0b61d3168334bc59c647155d8acec62e1d2f0eff"
+}

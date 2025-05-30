@@ -31,6 +31,8 @@ tags:
     description: doctor profiles and information
   - name: consultations
     description: medical consultations and related data
+  - name: prescriptions
+    description: user prescriptions management
 
 paths:
   # =================== AUTH ===================
@@ -942,6 +944,54 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Prescription'
+
+  /prescriptions/{prescription_id}/purchase:
+    patch:
+      tags:
+        - prescriptions
+      summary: 🔒 Mark prescription as purchased
+      description: Updates the `purchased_at` field for a prescription to indicate it has been purchased.
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: prescription_id
+          in: path
+          required: true
+          description: UUID of the prescription
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purchased_at]
+              properties:
+                purchased_at:
+                  type: string
+                  format: date-time
+                  example: "2025-05-30T15:04:05Z"
+      responses:
+        '200':
+          description: Prescription marked as purchased
+          content:
+            application/json:
+              example:
+                message: Prescription marked as purchased
+        '403':
+          description: Authenticated user is not the owner of the prescription
+          content:
+            application/json:
+              example:
+                error: Not the same user
+        '404':
+          description: Prescription not found
+          content:
+            application/json:
+              example:
+                error: Row does not exist in the database
 
   /consultations/{consultation_id}/reminder:
     put:

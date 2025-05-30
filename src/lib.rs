@@ -9,7 +9,7 @@ pub mod schema;
 use axum::{
     Router,
     extract::FromRef,
-    routing::{delete, get, post, put},
+    routing::{delete, get, patch, post, put},
 };
 use protocol::Nonce;
 
@@ -34,7 +34,8 @@ use route::{
         add_user_consultation, get_consultation_diagnoses,
         get_consultation_prescriptions, get_doctor_consultations_with_user,
         get_own_consultation_single, get_own_consultations,
-        get_own_consultations_as_doctor, get_user_consultations, set_reminder,
+        get_own_consultations_as_doctor, get_user_consultations,
+        set_prescriptions_purchased_at, set_reminder,
     },
     doctor_profile::{
         add_doctor_practice_location, get_doctor_profile,
@@ -129,6 +130,10 @@ pub fn app(state: AppState) -> Router {
         .route(
             "/consultations/{consultation_id}/prescriptions",
             get(get_consultation_prescriptions),
+        )
+        .route(
+            "/prescriptions/{prescription_id}/purchase",
+            patch(set_prescriptions_purchased_at),
         )
         .route(
             "/consultations/{consultation_id}/reminder",
