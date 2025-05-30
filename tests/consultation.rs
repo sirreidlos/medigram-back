@@ -27,7 +27,7 @@ async fn add_consultations_non_doctor(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
     let (session_id, _user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/users/41676bb2-8561-47fe-9271-4c7e89defa7c/consultations"))
+        .uri(format!("http://{API_ROOT_URL}/users/41490144-e4e1-4d1f-9eb7-f90af81c12ce/consultations"))
         .method("POST")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
@@ -42,6 +42,7 @@ async fn add_consultations_non_doctor(db_pool: Pool<Postgres>) {
                 "signature": "pCNjNI7vsUhP0TEfinN+NFOTEYLsexyVnawHx8Fx+x5VIhPho2/psGS9Ng96WGdO9mc8cNiK15Pg8KXVHdGuDQ=="
               },
               "user_id": "41676bb2-8561-47fe-9271-4c7e89defa7c",
+              "location_id": "fbc0a545-f266-495d-91a1-667479a13ace",
               "diagnoses": [
                 {
                   "diagnosis": "Common Cold",
@@ -84,18 +85,19 @@ async fn add_consultations_invalid_nonce(db_pool: Pool<Postgres>) {
     let mut app = get_app(db_pool);
     let (session_id, _user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/users/41676bb2-8561-47fe-9271-4c7e89defa7c/consultations"))
+        .uri(format!("http://{API_ROOT_URL}/users/41490144-e4e1-4d1f-9eb7-f90af81c12ce/consultations"))
         .method("POST")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
         .body(Body::from(
             json!({
               "consent": {
-                "signer_device_id": "862f034f-c705-48ff-bd0e-3a239c6c575e",
+                "signer_device_id": "b896cff8-de47-451c-96c1-74086c86b9e7",
                 "nonce": "XjMOZe0G6cUndk4U",
                 "signature": "lzfJ8534rZ2f4m0CMdxE5T0emdiV3AERgxYk1q7NGUz+leM/7rgzCyVXCjjXBc8cX4P236h1bjEJ0w7oHVPzCg=="
               },
               "user_id": "41676bb2-8561-47fe-9271-4c7e89defa7c",
+              "location_id": "fbc0a545-f266-495d-91a1-667479a13ace",
               "diagnoses": [
                 {
                   "diagnosis": "Common Cold",
@@ -154,7 +156,7 @@ async fn add_consultations_no_device(db_pool: Pool<Postgres>) {
 
     let (session_id, _user_id) = login_as_alice(&mut app).await;
     let request = Request::builder()
-        .uri(format!("http://{API_ROOT_URL}/users/41676bb2-8561-47fe-9271-4c7e89defa7c/consultations"))
+        .uri(format!("http://{API_ROOT_URL}/users/41490144-e4e1-4d1f-9eb7-f90af81c12ce/consultations"))
         .method("POST")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {session_id}"))
@@ -162,11 +164,12 @@ async fn add_consultations_no_device(db_pool: Pool<Postgres>) {
             json!(
                     {
                       "consent": {
-                        "signer_device_id": "862f034f-c705-48ff-bd0e-3a239c6c575e",
+                        "signer_device_id": "b896cff8-de47-451c-96c1-74086c86b9e7",
                         "nonce": nonce,
                         "signature": "lzfJ8534rZ2f4m0CMdxE5T0emdiV3AERgxYk1q7NGUz+leM/7rgzCyVXCjjXBc8cX4P236h1bjEJ0w7oHVPzCg=="
                       },
                       "user_id": "41676bb2-8561-47fe-9271-4c7e89defa7c",
+                      "location_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
                       "diagnoses": [
                         {
                           "diagnosis": "Common Cold",

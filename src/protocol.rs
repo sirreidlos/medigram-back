@@ -109,10 +109,6 @@ pub enum ConsentError {
     ///
     /// Returns `StatusCode::GONE`
     KeyExpired,
-    /// Error from a non-licensed user trying to act as one
-    ///
-    /// Returns `StatusCode::FORBIDDEN`
-    NotLicensed,
 }
 
 impl IntoResponse for ConsentError {
@@ -132,9 +128,6 @@ impl IntoResponse for ConsentError {
             }
             ConsentError::KeyExpired => {
                 (StatusCode::GONE, "Consesnt has expired")
-            }
-            ConsentError::NotLicensed => {
-                (StatusCode::FORBIDDEN, "You are not a licensed practitioner")
             }
         };
 

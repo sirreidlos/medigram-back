@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
-    auth::AuthUser,
+    auth::{AuthUser, LicensedUser},
     error::{APIResult, AppError, DatabaseError},
     schema::{DoctorPracticeLocation, DoctorProfile},
 };
@@ -38,7 +38,7 @@ pub async fn get_doctor_profile(
     Path(doctor_id): Path<Uuid>,
 ) -> APIResult<Json<DoctorProfilePublic>> {
     let profile = query!(
-        "SELECT d.doctor_id, d.user_id, d.created_at, ud.name
+        "SELECT d.doctor_id, d.user_id, d.created_at, d.approved_at, ud.name
             FROM doctor_profiles AS d
             JOIN user_details AS ud ON ud.user_id = d.user_id
             WHERE doctor_id = $1",
@@ -59,6 +59,10 @@ pub async fn get_doctor_profile(
             AppError::InternalError
         }
     })?;
+
+    if profile.approved_at.is_none() {
+        return Err(AppError::NotLicensed);
+    }
 
     let locations = query_as!(
         DoctorPracticeLocation,
@@ -99,7 +103,7 @@ pub async fn get_doctor_profile_by_user_id(
     Path(user_id): Path<Uuid>,
 ) -> APIResult<Json<DoctorProfilePublic>> {
     let profile = query!(
-        "SELECT d.doctor_id, d.user_id, d.created_at, ud.name
+        "SELECT d.doctor_id, d.user_id, d.created_at, d.approved_at, ud.name
             FROM doctor_profiles AS d
             JOIN user_details AS ud ON ud.user_id = d.user_id
             WHERE d.user_id = $1",
@@ -120,6 +124,10 @@ pub async fn get_doctor_profile_by_user_id(
             AppError::InternalError
         }
     })?;
+
+    if profile.approved_at.is_none() {
+        return Err(AppError::NotLicensed);
+    }
 
     let locations = query_as!(
         DoctorPracticeLocation,
@@ -151,47 +159,92 @@ pub async fn get_doctor_profile_by_user_id(
     }))
 }
 
-// !TODO: handle this, prob by adding a new admin role that can assign admin to
-// other user or something
-// pub async fn set_doctor_profile(
-//     State(state): State<AppState>,
-//     AuthUser { user_id, .. }: AuthUser,
-//     Json(DoctorProfilePayload {
-//         practice_permit,
-//         practice_address,
-//     }): Json<DoctorProfilePayload>,
-// ) -> APIResult<(StatusCode, Json<Value>)> {
-//     query!(
-//         "INSERT INTO doctor_profiles (user_id, practice_permit, \
-//          practice_address, approved) VALUES ($1, $2, $3, $4)",
-//         user_id,
-//         practice_permit,
-//         practice_address,
-//         false
-//     )
-//     .execute(&state.db_pool)
-//     .await
-//     .map_err(|e| {
-//         error!(
-//             "Error while inserting doctor_profile for {}:
-//              {:?}",
-//             user_id, e
-//         );
+pub async fn set_doctor_profile(
+    State(state): State<AppState>,
+    AuthUser { user_id, .. }: AuthUser,
+) -> APIResult<(StatusCode, Json<Value>)> {
+    let profile = query_as!(
+        DoctorProfile,
+        "SELECT * FROM doctor_profiles WHERE user_id = $1",
+        user_id
+    )
+    .fetch_optional(&state.db_pool)
+    .await
+    .map_err(|e| {
+        error!("Error while fetching doctor profile for {}: {}", user_id, e);
 
-//         match e {
-//             sqlx::Error::Database(db_e) => {
-//                 if db_e.is_foreign_key_violation() {
-//                     DatabaseError::ForeignKeyViolation.into()
-//                 } else {
-//                     AppError::InternalError
-//                 }
-//             }
-//             _ => AppError::InternalError,
-//         }
-//     })?;
+        AppError::InternalError
+    })?;
 
-//     Ok((
-//         StatusCode::OK,
-//         Json(json!({ "message": "Successfully submitted your application"
-// })),     ))
-// }
+    if profile.is_some() {
+        return Err(DatabaseError::ForeignKeyViolation.into());
+    }
+
+    query!("INSERT INTO doctor_profiles (user_id) VALUES ($1)", user_id,)
+        .execute(&state.db_pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "Error while inserting doctor_profile for {}:
+             {:?}",
+                user_id, e
+            );
+
+            match e {
+                sqlx::Error::Database(db_e) => {
+                    if db_e.is_foreign_key_violation() {
+                        DatabaseError::ForeignKeyViolation.into()
+                    } else {
+                        AppError::InternalError
+                    }
+                }
+                _ => AppError::InternalError,
+            }
+        })?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(
+            json!({ "message": "Successfully created a temporary profile"
+            }),
+        ),
+    ))
+}
+
+#[derive(Deserialize)]
+pub struct PracticeAddressPayload {
+    practice_permit: String,
+    practice_address: String,
+}
+
+pub async fn add_doctor_practice_location(
+    State(state): State<AppState>,
+    doctor: LicensedUser,
+    Json(PracticeAddressPayload {
+        practice_permit,
+        practice_address,
+    }): Json<PracticeAddressPayload>,
+) -> APIResult<(StatusCode, Json<Value>)> {
+    query!(
+        "INSERT INTO doctor_practice_locations (doctor_id, practice_permit, \
+         practice_address) VALUES ($1, $2, $3)",
+        doctor.doctor_id,
+        practice_permit,
+        practice_address
+    )
+    .execute(&state.db_pool)
+    .await
+    .map_err(|e| {
+        error!(
+            "Error while adding a practice address for {}: {}",
+            doctor.doctor_id, e
+        );
+
+        AppError::InternalError
+    })?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(json!({ "message": "Successfully submitted a practice address" })),
+    ))
+}

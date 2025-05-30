@@ -39,6 +39,8 @@ pub struct DoctorProfile {
     pub doctor_id: Uuid,
     pub user_id: Uuid,
     pub created_at: DateTime<Utc>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub approved_by: Option<Uuid>,
 }
 
 #[derive(Serialize)]
@@ -48,6 +50,7 @@ pub struct DoctorPracticeLocation {
     pub practice_permit: String,
     pub practice_address: String,
     pub approved_at: Option<DateTime<Utc>>,
+    pub approved_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
 }
 

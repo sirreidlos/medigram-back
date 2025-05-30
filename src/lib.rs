@@ -36,7 +36,10 @@ use route::{
         get_own_consultation_single, get_own_consultations,
         get_own_consultations_as_doctor, get_user_consultations, set_reminder,
     },
-    doctor_profile::{get_doctor_profile, get_doctor_profile_by_user_id},
+    doctor_profile::{
+        add_doctor_practice_location, get_doctor_profile,
+        get_doctor_profile_by_user_id, set_doctor_profile,
+    },
     medical_condition::{
         delete_own_conditions, get_own_conditions, get_user_conditions,
         post_own_conditions,
@@ -132,13 +135,6 @@ pub fn app(state: AppState) -> Router {
             put(set_reminder),
         )
         // =================== USER INFORMATION ===================
-        .route("/doctors/{doctor_id}/profile", get(get_doctor_profile))
-        .route(
-            "/users/{user_id}/doctor-profile",
-            get(get_doctor_profile_by_user_id),
-        )
-        // do we really want this? or should we go with the email approach
-        // .route("/doctor-profile", post(set_doctor_profile))
         .route("/me", get(get_own_info))
         .route("/users/{user_id}", get(get_user_info))
         .route("/me/details", get(get_own_details))
@@ -149,6 +145,17 @@ pub fn app(state: AppState) -> Router {
         .route("/me/measurements", post(add_own_measurement))
         .route("/me/purchases", get(get_own_purchases))
         .route("/me/purchases", post(add_own_purchase))
+        // =================== DOCTOR PROFILES ===================
+        .route("/doctors/{doctor_id}/profile", get(get_doctor_profile))
+        .route(
+            "/users/{user_id}/doctor-profile",
+            get(get_doctor_profile_by_user_id),
+        )
+        .route("/me/doctor-profile", post(set_doctor_profile))
+        .route(
+            "/doctor/practice-location",
+            post(add_doctor_practice_location),
+        )
         // =================== MEDICAL CONDITIONS ===================
         .route("/me/medical-conditions", get(get_own_conditions))
         .route("/me/medical-conditions", post(post_own_conditions))

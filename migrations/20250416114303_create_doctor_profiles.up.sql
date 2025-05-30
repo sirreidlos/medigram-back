@@ -1,5 +1,7 @@
 CREATE TABLE doctor_profiles (
     doctor_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(user_id) NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    approved_at TIMESTAMPTZ,
+    approved_by UUID REFERENCES users(user_id)
 );

@@ -30,6 +30,11 @@
       },
       {
         "ordinal": 5,
+        "name": "approved_by",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -45,6 +50,7 @@
       false,
       false,
       false,
+      true,
       true,
       false
     ]

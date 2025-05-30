@@ -186,7 +186,7 @@ pub async fn add_user_consultation(
     }): Json<ConsultationPayload>,
 ) -> APIResult<(StatusCode, Json<Value>)> {
     if doctor.is_none() {
-        return Err(ConsentError::NotLicensed.into());
+        return Err(AppError::NotLicensed);
     }
     let doctor_id = doctor.unwrap().doctor_id;
     let location_query: DoctorPracticeLocation = query_as!(

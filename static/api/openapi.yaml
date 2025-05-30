@@ -674,6 +674,67 @@ paths:
               example:
                 error: Row does not exist in the database
 
+  /me/doctor-profile:
+    post:
+      tags:
+        - doctors
+      summary: 🔒 Create a doctor profile
+      security:
+        - SessionAuth: []
+      responses:
+        '201':
+          description: Doctor profile created
+          content:
+            application/json:
+              example:
+                message: Successfully created a temporary profile
+        '409':
+          description: Doctor profile created previously
+          content:
+            application/json:
+              example:
+                message: foreign key violation
+
+
+  /doctor/practice-location:
+    post:
+      tags:
+        - doctors
+      summary: 🔒 Add a practice address
+      security:
+        - PractitionerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - practice_permit
+                - practice_address
+              properties:
+                practice_permit:
+                  type: string
+                  description: Permit/license number authorizing practice at the address
+                  example: "420/SIP-001/Dinkes/I/2025"
+                practice_address:
+                  type: string
+                  description: The physical address where the doctor practices
+                  example: "Jl. Raya Kb. Jeruk No.27, RT.1/RW.9, Kemanggisan, Kec. Palmerah, Kota Jakarta Barat, Daerah Khusus Ibukota Jakarta 11530"
+      responses:
+        '201':
+          description: Location added
+          content:
+            application/json:
+              example:
+                message: Successfully submitted a practice address
+        '401':
+          description: Unauthorized - not a licensed practitioner
+          content:
+            application/json:
+              example:
+                message: Not licensed  
+
   # =================== CONSULTATIONS ===================
   /me/consultations:
     get:

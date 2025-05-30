@@ -17,6 +17,16 @@
         "ordinal": 2,
         "name": "created_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "approved_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "approved_by",
+        "type_info": "Uuid"
       }
     ],
     "parameters": {
@@ -27,7 +37,9 @@
     "nullable": [
       false,
       false,
-      false
+      false,
+      true,
+      true
     ]
   },
   "hash": "c0ef538a366e94ed35f4fdae11bd413806e8f972ca98b08ed44d5203145601c0"

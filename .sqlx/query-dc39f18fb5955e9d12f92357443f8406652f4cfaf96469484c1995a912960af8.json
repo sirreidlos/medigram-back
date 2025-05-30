@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO doctor_practice_locations (doctor_id, practice_permit, practice_address) VALUES ($1, $2, $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dc39f18fb5955e9d12f92357443f8406652f4cfaf96469484c1995a912960af8"
+}

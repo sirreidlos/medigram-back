@@ -22,6 +22,10 @@ pub enum AppError {
     Consent(ConsentError),
     /// Error for database-related issues
     Database(DatabaseError),
+    /// Error from a non-licensed user trying to act as one
+    ///
+    /// Returns `StatusCode::FORBIDDEN`
+    NotLicensed,
 }
 
 // actual decoration trait check
@@ -49,6 +53,9 @@ impl IntoResponse for AppError {
                 StatusCode::FORBIDDEN,
                 "You are not allowed to request for this",
             ),
+            AppError::NotLicensed => {
+                (StatusCode::FORBIDDEN, "You are not a licensed practitioner")
+            }
         };
 
         let body = Json(serde_json::json!({

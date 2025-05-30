@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT d.doctor_id, d.user_id, d.created_at, ud.name\n            FROM doctor_profiles AS d\n            JOIN user_details AS ud ON ud.user_id = d.user_id\n            WHERE doctor_id = $1",
+  "query": "SELECT d.doctor_id, d.user_id, d.created_at, d.approved_at, ud.name\n            FROM doctor_profiles AS d\n            JOIN user_details AS ud ON ud.user_id = d.user_id\n            WHERE d.user_id = $1",
   "describe": {
     "columns": [
       {
@@ -20,6 +20,11 @@
       },
       {
         "ordinal": 3,
+        "name": "approved_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
         "name": "name",
         "type_info": "Text"
       }
@@ -33,8 +38,9 @@
       false,
       false,
       false,
+      true,
       false
     ]
   },
-  "hash": "6e68f40a019eb264e3cd514c082b6664cf0579fc4c8b4dd6f83dd798afe0db8e"
+  "hash": "5e4043e46c4cff96b2776b754134372c7152c07e15e7f8e84f54bf45b887dea2"
 }

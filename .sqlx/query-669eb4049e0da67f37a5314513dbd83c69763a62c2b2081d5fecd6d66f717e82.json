@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO doctor_profiles (user_id) VALUES ($1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "669eb4049e0da67f37a5314513dbd83c69763a62c2b2081d5fecd6d66f717e82"
+}

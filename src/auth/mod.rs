@@ -9,6 +9,7 @@ use axum_extra::{
     headers::{self, authorization::Bearer},
     typed_header::TypedHeaderRejectionReason,
 };
+use chrono::{DateTime, Utc};
 use ed25519_compact::PublicKey;
 use moka::sync::Cache;
 use rand::{Rng, distr::Alphanumeric, rng};
@@ -22,7 +23,7 @@ pub mod email;
 
 use crate::{
     AppState,
-    error::AppError,
+    error::{AppError, DatabaseError},
     schema::{DeviceKey, DoctorProfile, User},
 };
 
@@ -143,9 +144,9 @@ where
 #[derive(Clone)]
 pub struct LicensedUser {
     pub doctor_id: Uuid,
+    pub approved_at: Option<DateTime<Utc>>,
 }
 
-// TODO rewrite this to not be optional
 impl<S> OptionalFromRequestParts<S> for LicensedUser
 where
     S: Send + Sync,
@@ -182,15 +183,65 @@ where
             }
         };
 
-        // doctor profile is ONLY created when they have at least 1 permit
-        // approved
-        // if doctor_profile.approved_at.is_none() {
-        //     return Ok(None);
-        // }
+        if doctor_profile.approved_at.is_none() {
+            return Ok(None);
+        }
 
         let doctor_id = doctor_profile.doctor_id;
+        let approved_at = doctor_profile.approved_at;
 
-        Ok(Some(LicensedUser { doctor_id }))
+        Ok(Some(LicensedUser {
+            doctor_id,
+            approved_at,
+        }))
+    }
+}
+
+impl<S> FromRequestParts<S> for LicensedUser
+where
+    S: Send + Sync,
+    Pool<Postgres>: FromRef<S>,
+    Cache<String, Uuid>: FromRef<S>,
+{
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        let db = Pool::<Postgres>::from_ref(state);
+
+        let auth = AuthUser::from_request_parts(parts, state).await?;
+        let doctor_user_id = auth.user_id;
+
+        let doctor_profile = match query_as!(
+            DoctorProfile,
+            "SELECT * FROM doctor_profiles WHERE user_id = $1",
+            doctor_user_id
+        )
+        .fetch_one(&db)
+        .await
+        {
+            Ok(profile) => profile,
+            Err(sqlx::Error::RowNotFound) => {
+                return Err(DatabaseError::RowNotFound.into());
+            }
+            Err(e) => {
+                error!(
+                    "Error occured while fetching for doctor profile: {:?}",
+                    e
+                );
+                return Err(AppError::InternalError);
+            }
+        };
+
+        let doctor_id = doctor_profile.doctor_id;
+        let approved_at = doctor_profile.approved_at;
+
+        Ok(LicensedUser {
+            doctor_id,
+            approved_at,
+        })
     }
 }
 
