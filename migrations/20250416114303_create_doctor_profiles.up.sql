@@ -3,5 +3,5 @@ CREATE TABLE doctor_profiles (
     user_id UUID REFERENCES users(user_id) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     approved_at TIMESTAMPTZ,
-    approved_by UUID REFERENCES users(user_id)
+    approved_by UUID REFERENCES admins(user_id)
 );

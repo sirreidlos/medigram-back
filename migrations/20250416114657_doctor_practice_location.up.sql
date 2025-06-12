@@ -4,6 +4,6 @@ CREATE TABLE doctor_practice_locations (
     practice_permit TEXT NOT NULL,
     practice_address TEXT NOT NULL, -- Maybe separate the address into smaller units?
     approved_at TIMESTAMPTZ, -- NULL if not yet approved
-    approved_by UUID REFERENCES users(user_id),
+    approved_by UUID REFERENCES admins(user_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
