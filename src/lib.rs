@@ -26,6 +26,7 @@ use tower_http::{
 };
 
 use route::{
+    admin::{approve_location, promote_to_admin},
     allergy::{
         add_own_allergy, get_own_allergies, get_user_allergies,
         remove_own_allergy,
@@ -181,6 +182,12 @@ pub fn app(state: AppState) -> Router {
         .route("/register", post(auth::email::register))
         .route("/logout", post(auth::logout))
         .route("/request-nonce", get(request_nonce))
+        // =================== ADMIN ===================
+        .route("/users/{user_id}/promote-to-admin", post(promote_to_admin))
+        .route(
+            "/doctor/practice-location/{location_id}/approve",
+            post(approve_location),
+        )
         // =================== STATIC FOR DOCS ===================
         .nest_service("/static/api", ServeDir::new("./static/api"))
         .layer(cors)

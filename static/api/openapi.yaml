@@ -33,6 +33,8 @@ tags:
     description: medical consultations and related data
   - name: prescriptions
     description: user prescriptions management
+  - name: admin
+    description: admin-only routes
 
 paths:
   # =================== AUTH ===================
@@ -141,6 +143,83 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NonceResponse'
+
+  # =================== ADMIN ===================
+  /users/{user_id}/promote-to-admin:
+    post:
+      tags:
+        - admin
+      summary: 🔒 Promote a user to admin
+      security:
+        - AdminAuth: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the user to promote
+      responses:
+        '201':
+          description: User successfully promoted to admin
+          content:
+            application/json:
+              example:
+                message: User promoted to admin
+        '403':
+          description: Caller is not an admin
+          content:
+            application/json:
+              example:
+                error: Not an admin
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                error: Database error
+
+  /doctor/practice-location/{location_id}/approve:
+    post:
+      tags:
+        - admin
+      summary: 🔒 Approve a doctor's practice location
+      security:
+        - AdminAuth: []
+      parameters:
+        - in: path
+          name: location_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the practice location
+      responses:
+        '200':
+          description: Location approved
+          content:
+            application/json:
+              example:
+                message: Practice location approved
+        '403':
+          description: Caller is not an admin
+          content:
+            application/json:
+              example:
+                error: Not an admin
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              example:
+                error: Row does not exist in the database
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                error: Database error
 
   # =================== USER INFORMATION ===================
   /me:
@@ -1085,6 +1164,12 @@ components:
       description: |
         SESSION_ID authorization from the login with higher privilege as a
         practitioner
+    AdminAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: session-id
+      description: |
+        SESSION_ID authorization as an admin
 
   responses:
     UnauthorizedError:

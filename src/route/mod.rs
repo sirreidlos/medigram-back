@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod allergy;
 pub mod consultation;
 pub mod doctor_profile;

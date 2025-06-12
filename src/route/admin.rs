@@ -1,18 +1,24 @@
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
 };
 use chrono::Utc;
+use serde_json::{Value, json};
 use sqlx::PgPool;
+use tracing::error;
 use uuid::Uuid;
 
-use crate::auth::AuthUser;
+use crate::{
+    auth::AuthUser,
+    error::{APIResult, AppError, DatabaseError},
+};
 
 pub async fn promote_to_admin(
     State(pool): State<PgPool>,
     Path(target_user_id): Path<Uuid>,
-    auth_user: AuthUser,              
-) -> Result<StatusCode, (StatusCode, String)> {
+    auth_user: AuthUser,
+) -> APIResult<(StatusCode, Json<Value>)> {
     let admin_id = auth_user.user_id;
 
     // 1. Check if the caller is already an admin
@@ -22,11 +28,15 @@ pub async fn promote_to_admin(
     )
     .fetch_one(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+    .map_err(|e| {
+        error!("Error while checking if {admin_id} is admin: {e:?}");
+
+        AppError::InternalError
+    })?
     .unwrap_or(false);
 
     if !is_admin {
-        return Err((StatusCode::FORBIDDEN, "Not an admin".into()));
+        return Err(AppError::NotAdmin);
     }
 
     // 2. Insert the new admin record
@@ -41,16 +51,23 @@ pub async fn promote_to_admin(
     )
     .execute(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    .map_err(|e| {
+        error!("Error while promoting {target_user_id} to admin: {e:?}");
 
-    Ok(StatusCode::CREATED)
+        AppError::InternalError
+    })?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(json!({ "message": "User promoted to admin" })),
+    ))
 }
 
 pub async fn approve_location(
     State(pool): State<PgPool>,
     Path(location_id): Path<Uuid>,
-    auth_user: AuthUser,              
-) -> Result<StatusCode, (StatusCode, String)> {
+    auth_user: AuthUser,
+) -> APIResult<(StatusCode, Json<Value>)> {
     let admin_id = auth_user.user_id;
 
     // 1. Verify caller is admin
@@ -60,25 +77,37 @@ pub async fn approve_location(
     )
     .fetch_one(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+    .map_err(|e| {
+        error!("Error while checking if {admin_id} is admin: {e:?}");
+
+        AppError::InternalError
+    })?
     .unwrap_or(false);
 
     if !is_admin {
-        return Err((StatusCode::FORBIDDEN, "Not an admin".into()));
+        return Err(AppError::NotAdmin);
     }
 
     // 2. Check if location exists
     let exists: bool = sqlx::query_scalar!(
-        "SELECT EXISTS(SELECT 1 FROM doctor_practice_locations WHERE location_id = $1)",
+        "SELECT EXISTS(SELECT 1 FROM doctor_practice_locations WHERE \
+         location_id = $1)",
         location_id
     )
     .fetch_one(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+    .map_err(|e| {
+        error!(
+            "Error while searching for location {location_id} to approve: \
+             {e:?}"
+        );
+
+        AppError::InternalError
+    })?
     .unwrap_or(false);
 
     if !exists {
-        return Err((StatusCode::NOT_FOUND, "Location not found".into()));
+        return Err(DatabaseError::RowNotFound.into());
     }
 
     // 3. Update approval fields
@@ -94,7 +123,14 @@ pub async fn approve_location(
     )
     .execute(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    .map_err(|e| {
+        error!("Error while trying to approve location {location_id}: {e:?}");
 
-    Ok(StatusCode::OK)
+        AppError::InternalError
+    })?;
+
+    Ok((
+        StatusCode::OK,
+        Json(json!({ "message": "Practice location approved" })),
+    ))
 }

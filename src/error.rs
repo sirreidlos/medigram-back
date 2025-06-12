@@ -30,6 +30,10 @@ pub enum AppError {
     ///
     /// Returns `StatusCode::FORBIDDEN`
     LocationNotApproved,
+    /// Error from a non-admin user trying to act as one
+    ///
+    /// Returns `StatusCode::FORBIDDEN`
+    NotAdmin,
 }
 
 // actual decoration trait check
@@ -63,6 +67,7 @@ impl IntoResponse for AppError {
             AppError::LocationNotApproved => {
                 (StatusCode::FORBIDDEN, "This location is not approved")
             }
+            AppError::NotAdmin => (StatusCode::FORBIDDEN, "Not an admin"),
         };
 
         let body = Json(serde_json::json!({

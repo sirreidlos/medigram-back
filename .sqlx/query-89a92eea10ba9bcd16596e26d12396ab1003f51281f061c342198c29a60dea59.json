@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE doctor_practice_locations\n        SET approved_by = $1, approved_at = $2\n        WHERE location_id = $3\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "89a92eea10ba9bcd16596e26d12396ab1003f51281f061c342198c29a60dea59"
+}
