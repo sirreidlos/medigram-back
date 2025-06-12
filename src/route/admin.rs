@@ -78,20 +78,34 @@ pub async fn approve_location(
         return Err(DatabaseError::RowNotFound.into());
     }
 
-    sqlx::query!(
-        r#"
-        UPDATE doctor_practice_locations
+    let record = sqlx::query!(
+        "UPDATE doctor_practice_locations
         SET approved_by = $1, approved_at = $2
-        WHERE location_id = $3
-        "#,
+        WHERE location_id = $3 RETURNING doctor_id",
         admin_id,
         Utc::now(),
         location_id
     )
-    .execute(&pool)
+    .fetch_one(&pool)
     .await
     .map_err(|e| {
         error!("Error while trying to approve location {location_id}: {e:?}");
+
+        AppError::InternalError
+    })?;
+
+    let doctor_id = record.doctor_id;
+
+    sqlx::query!(
+        "UPDATE doctor_profiles SET approved_at = NOW(), approved_by = $1
+        WHERE doctor_id = $2 AND approved_at IS NULL AND approved_by IS NULL",
+        admin_id,
+        doctor_id
+    )
+    .execute(&pool)
+    .await
+    .map_err(|e| {
+        error!("Error while trying to approve doctor {doctor_id}: {e:?}");
 
         AppError::InternalError
     })?;
